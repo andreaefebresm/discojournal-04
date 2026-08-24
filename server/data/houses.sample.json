@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "casa-piscina",
+    "number": 1,
+    "title": "Casa piscina",
+    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 01.",
+    "image": { "url": "/assets/houses/casa1_piscina.jpg", "width": 1200, "height": 654 },
+    "body": ["Testo segnaposto dell'articolo 01. Sostituire con il contenuto reale da Contentful."]
+  },
+  {
+    "slug": "torre",
+    "number": 2,
+    "title": "Torre",
+    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 02.",
+    "image": { "url": "/assets/houses/casa2_torre.jpg", "width": 1200, "height": 654 },
+    "body": ["Testo segnaposto dell'articolo 02. Sostituire con il contenuto reale da Contentful."]
+  },
+  {
+    "slug": "serra",
+    "number": 3,
+    "title": "Serra",
+    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 03.",
+    "image": { "url": "/assets/houses/casa3_serra.jpg", "width": 1200, "height": 654 },
+    "body": ["Testo segnaposto dell'articolo 03. Sostituire con il contenuto reale da Contentful."]
+  },
+  {
+    "slug": "loft",
+    "number": 4,
+    "title": "Loft",
+    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 04.",
+    "image": { "url": "/assets/houses/casa4_loft.jpg", "width": 1200, "height": 654 },
+    "body": ["Testo segnaposto dell'articolo 04. Sostituire con il contenuto reale da Contentful."]
+  },
+  {
+    "slug": "cottage",
+    "number": 5,
+    "title": "Cottage",
+    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 05.",
+    "image": { "url": "/assets/houses/casa5_cottage.jpg", "width": 1200, "height": 654 },
+    "body": ["Testo segnaposto dell'articolo 05. Sostituire con il contenuto reale da Contentful."]
+  }
+]
