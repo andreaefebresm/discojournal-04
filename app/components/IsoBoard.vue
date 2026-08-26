@@ -45,6 +45,11 @@ const svgEl = ref<SVGSVGElement | null>(null);
 // nei tentativi precedenti. Vedi app/data/houseLayout.ts per i dettagli.
 const GX_X = 26, GX_Y = 6.0;   // asse gx: ~12.9° (tan⁻¹(6/26))
 const GY_X = 26, GY_Y = 12.23; // asse gy: ~25.2° (tan⁻¹(12.23/26))
+// Il pattern di sfondo disegna una linea ogni GRID_STEP celle (vedi buildBoard) — le
+// case in houseLayout.ts hanno gx0/gy0/cols/rows multipli di GRID_STEP apposta, così il
+// bordo "a gradini" del lotto scuro (irregularPlotPoints) cade sulle stesse linee della
+// griglia visibile invece di fare scalini più fini e sembrare "non seguirla".
+const GRID_STEP = 5;
 function proj(gx: number, gy: number) { return { x: gx * GX_X - gy * GY_X, y: gx * GX_Y + gy * GY_Y }; }
 // inversa di proj(): serve per calcolare, dati i 4 angoli del viewBox reale (che
 // combacia con l'aspect ratio del contenitore, non con quello del contenuto), fino a
@@ -84,13 +89,17 @@ function seededRand(seed: number) {
 // bordo (mai gli angoli, per restare un'unica forma semplice) la toglie o ne
 // aggiunge una adiacente fuori, a caso ma stabile.
 function buildCellSet(hs: any, rand: () => number) {
+  // Opera in "celle grandi" (bigCols x bigRows, un'unità = GRID_STEP celle fini) così
+  // gli scalini del bordo cadono sulle stesse linee del pattern di sfondo, non su una
+  // sottogriglia più fine e invisibile.
+  const bigCols = hs.cols / GRID_STEP, bigRows = hs.rows / GRID_STEP;
   const cells = new Set<string>();
-  for (let i = 0; i < hs.cols; i++) for (let j = 0; j < hs.rows; j++) cells.add(i + ',' + j);
+  for (let i = 0; i < bigCols; i++) for (let j = 0; j < bigRows; j++) cells.add(i + ',' + j);
   const edgeIdx = (len: number) => { const a = []; for (let k = 1; k < len - 1; k++) a.push(k); return a; };
-  edgeIdx(hs.cols).forEach(i => { const r = rand(); if (r < 0.30) cells.delete(i + ',0'); else if (r < 0.55) cells.add(i + ',-1'); });
-  edgeIdx(hs.cols).forEach(i => { const r = rand(); if (r < 0.30) cells.delete(i + ',' + (hs.rows - 1)); else if (r < 0.55) cells.add(i + ',' + hs.rows); });
-  edgeIdx(hs.rows).forEach(j => { const r = rand(); if (r < 0.30) cells.delete('0,' + j); else if (r < 0.55) cells.add('-1,' + j); });
-  edgeIdx(hs.rows).forEach(j => { const r = rand(); if (r < 0.30) cells.delete((hs.cols - 1) + ',' + j); else if (r < 0.55) cells.add(hs.cols + ',' + j); });
+  edgeIdx(bigCols).forEach(i => { const r = rand(); if (r < 0.30) cells.delete(i + ',0'); else if (r < 0.55) cells.add(i + ',-1'); });
+  edgeIdx(bigCols).forEach(i => { const r = rand(); if (r < 0.30) cells.delete(i + ',' + (bigRows - 1)); else if (r < 0.55) cells.add(i + ',' + bigRows); });
+  edgeIdx(bigRows).forEach(j => { const r = rand(); if (r < 0.30) cells.delete('0,' + j); else if (r < 0.55) cells.add('-1,' + j); });
+  edgeIdx(bigRows).forEach(j => { const r = rand(); if (r < 0.30) cells.delete((bigCols - 1) + ',' + j); else if (r < 0.55) cells.add(bigCols + ',' + j); });
   return cells;
 }
 // traccia il contorno dell'insieme di celle come un unico anello chiuso, in
@@ -139,7 +148,7 @@ function irregularPlotPoints(hs: any) {
   const cells = buildCellSet(hs, rand);
   const path = traceCellBoundary(cells);
   if (!path) return plotCorners(hs); // fallback sicuro
-  return path.map(([a, b]) => proj(hs.gx0 + a, hs.gy0 + b));
+  return path.map(([a, b]) => proj(hs.gx0 + a * GRID_STEP, hs.gy0 + b * GRID_STEP));
 }
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -210,12 +219,9 @@ function buildBoard() {
 
   svg.appendChild(el('rect', { x: vbX, y: vbY, width: vbW, height: vbH, fill: '#f1efe8' }));
 
-  // GRID_STEP: il PATTERN visivo (i rombi disegnati) è volutamente più largo delle celle
-  // usate per posizionare le case (gx0/gy0/cols/rows in houseLayout.ts restano sulla
-  // griglia fine di sempre, invariata) — si disegna una linea ogni GRID_STEP celle
-  // invece che ogni cella, quindi i rombi del pattern sono GRID_STEP volte più grandi,
-  // senza toccare affatto la disposizione o la dimensione delle case.
-  const GRID_STEP = 5;
+  // GRID_STEP dichiarata più sopra (condivisa con irregularPlotPoints): una linea ogni
+  // GRID_STEP celle invece che ogni cella, quindi i rombi del pattern sono GRID_STEP
+  // volte più grandi.
   const gridG = el('g', { opacity: 0.75 });
   const gxStart = Math.floor(gxMin / GRID_STEP) * GRID_STEP, gxEnd = Math.ceil(gxMax / GRID_STEP) * GRID_STEP;
   const gyStart = Math.floor(gyMin / GRID_STEP) * GRID_STEP, gyEnd = Math.ceil(gyMax / GRID_STEP) * GRID_STEP;
@@ -251,8 +257,9 @@ function buildBoard() {
     const bx0 = Math.min(...corners.map(p => p.x)), bx1 = Math.max(...corners.map(p => p.x));
     const by0 = Math.min(...corners.map(p => p.y)), by1 = Math.max(...corners.map(p => p.y));
     const bw = bx1 - bx0, bh = by1 - by0;
-    const w = bw * 0.72, h = w * IMG_ASPECT * 1.1; // *1.1 per il padding del .card
-    const x = bx0 + (bw - w) / 2, y = by0 + (bh - h) / 2 + bh * 0.06;
+    const w = bw * 0.9, h = w * IMG_ASPECT * 1.1;
+    // centrata sia orizzontalmente che verticalmente nel lotto (niente più offset verso il basso)
+    const x = bx0 + (bw - w) / 2, y = by0 + (bh - h) / 2;
 
     const fo = el('foreignObject', { x: x.toFixed(1), y: y.toFixed(1), width: w.toFixed(1), height: h.toFixed(1) });
     // button, non link: l'articolo si apre in una finestra interna alla pagina,
