@@ -210,13 +210,21 @@ function buildBoard() {
 
   svg.appendChild(el('rect', { x: vbX, y: vbY, width: vbW, height: vbH, fill: '#f1efe8' }));
 
+  // GRID_STEP: il PATTERN visivo (i rombi disegnati) è volutamente più largo delle celle
+  // usate per posizionare le case (gx0/gy0/cols/rows in houseLayout.ts restano sulla
+  // griglia fine di sempre, invariata) — si disegna una linea ogni GRID_STEP celle
+  // invece che ogni cella, quindi i rombi del pattern sono GRID_STEP volte più grandi,
+  // senza toccare affatto la disposizione o la dimensione delle case.
+  const GRID_STEP = 5;
   const gridG = el('g', { opacity: 0.75 });
-  for (let gx = gxMin; gx <= gxMax; gx++) {
-    const a = proj(gx, gyMin), b = proj(gx, gyMax);
+  const gxStart = Math.floor(gxMin / GRID_STEP) * GRID_STEP, gxEnd = Math.ceil(gxMax / GRID_STEP) * GRID_STEP;
+  const gyStart = Math.floor(gyMin / GRID_STEP) * GRID_STEP, gyEnd = Math.ceil(gyMax / GRID_STEP) * GRID_STEP;
+  for (let gx = gxStart; gx <= gxEnd; gx += GRID_STEP) {
+    const a = proj(gx, gyStart), b = proj(gx, gyEnd);
     gridG.appendChild(el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: '#d8d2bf', 'stroke-width': 0.8 }));
   }
-  for (let gy = gyMin; gy <= gyMax; gy++) {
-    const a = proj(gxMin, gy), b = proj(gxMax, gy);
+  for (let gy = gyStart; gy <= gyEnd; gy += GRID_STEP) {
+    const a = proj(gxStart, gy), b = proj(gxEnd, gy);
     gridG.appendChild(el('line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: '#d8d2bf', 'stroke-width': 0.8 }));
   }
   svg.appendChild(gridG);
