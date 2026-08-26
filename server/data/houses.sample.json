@@ -36,7 +36,7 @@
     "number": 5,
     "title": "Cottage",
     "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 05.",
-    "image": { "url": "/assets/houses/casa5_cottage.jpg", "width": 1200, "height": 654 },
+    "image": { "url": "/assets/houses/casa5_cottage.png", "width": 1200, "height": 654 },
     "body": ["Testo segnaposto dell'articolo 05. Sostituire con il contenuto reale da Contentful."]
   }
 ]
