@@ -37,15 +37,23 @@ export interface HouseLayout {
 // ritaglio che finge di essere l'edificio visto in isometria. Il rombo scuro sotto
 // resta geometricamente perfetto (ora con gli assi giusti) e fa da cornice, come
 // nelle fototessere infossate del riferimento che avevi mandato.
+// Round 3: lotti (rombo scuro) ancora più grandi e ancora più distanti — l'intero
+// layout del round precedente è stato scalato ×1.3 intorno al proprio centro (le
+// proporzioni/i gap relativi restano quindi identici e già verificati senza
+// sovrapposizioni, solo più grandi in assoluto). Il moltiplicatore tile/lotto in
+// IsoBoard.vue è stato abbassato (0.95→0.72) così il rombo scuro si vede chiaramente
+// intorno alla foto invece di essere quasi interamente coperto da essa. La vista in
+// IsoBoard.vue è inoltre volutamente "zoomata" (CROP_FACTOR) così i lotti più esterni
+// escono un po' dal bordo dello schermo, tagliati dalla cornice.
 export const HOUSE_LAYOUT: Record<string, HouseLayout> = {
-  "casa-piscina": { gx0: -7, gy0: 0,  cols: 6, rows: 4 },
-  "torre":        { gx0: 1,  gy0: -6, cols: 3, rows: 3 },
-  "serra":        { gx0: 5,  gy0: 0,  cols: 5, rows: 3 },
-  "loft":         { gx0: -5, gy0: 6,  cols: 4, rows: 4 },
-  "cottage":      { gx0: 2,  gy0: 6,  cols: 5, rows: 3 }
+  "casa-piscina": { gx0: 27,  gy0: 5,   cols: 48, rows: 32 },
+  "torre":        { gx0: -62, gy0: -39, cols: 23, rows: 25 },
+  "serra":        { gx0: -34, gy0: -66, cols: 40, rows: 25 },
+  "loft":         { gx0: 42,  gy0: -69, cols: 32, rows: 32 },
+  "cottage":      { gx0: -29, gy0: 28,  cols: 40, rows: 25 }
   // "super-mansion": aggiungere qui quando la sesta casa (articolo degli editors) è pronta —
   // scegliere gx0/gy0 fuori dagli ingombri sopra, cols/rows più grandi delle altre.
 };
 
 // estensione della griglia di sfondo (in celle) — deve coprire tutti i lotti con un margine
-export const GRID_BOUNDS = { gxMin: -10, gxMax: 13, gyMin: -9, gyMax: 12 };
+export const GRID_BOUNDS = { gxMin: -64, gxMax: 77, gyMin: -72, gyMax: 56 };

@@ -1,19 +1,20 @@
 <template>
-  <div>
+  <div class="board-root">
     <div class="board-wrap">
       <svg ref="svgEl" id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
     <div class="list">
-      <NuxtLink
+      <button
         v-for="hs in houses"
         :key="hs.slug"
-        :to="`/articolo/${hs.slug}`"
+        type="button"
         class="house"
+        :aria-label="`Casa 0${hs.number} — ${hs.title} — apri articolo`"
         @click="$emit('select', hs)"
       >
         <img :src="hs.image?.url" :alt="`${hs.title}, casa 0${hs.number}`" loading="lazy" />
         <div class="caption">Casa 0{{ hs.number }} — {{ hs.title }}</div>
-      </NuxtLink>
+      </button>
     </div>
   </div>
 </template>
@@ -34,10 +35,9 @@ const props = defineProps<{
   gridBounds: { gxMin: number; gxMax: number; gyMin: number; gyMax: number };
 }>();
 
-defineEmits<{ select: [house: any] }>();
+const emit = defineEmits<{ select: [house: any] }>();
 
 const svgEl = ref<SVGSVGElement | null>(null);
-const readout = useState<string>('board-readout', () => 'Ready.');
 
 // Griglia ASIMMETRICA — misurata per davvero sui bordi del basamento di 3 render
 // (edge-detection su colonne di pixel): l'asse "vicino" (gy) è ~25.2°, l'asse
@@ -46,6 +46,14 @@ const readout = useState<string>('board-readout', () => 'Ready.');
 const GX_X = 26, GX_Y = 6.0;   // asse gx: ~12.9° (tan⁻¹(6/26))
 const GY_X = 26, GY_Y = 12.23; // asse gy: ~25.2° (tan⁻¹(12.23/26))
 function proj(gx: number, gy: number) { return { x: gx * GX_X - gy * GY_X, y: gx * GX_Y + gy * GY_Y }; }
+// inversa di proj(): serve per calcolare, dati i 4 angoli del viewBox reale (che
+// combacia con l'aspect ratio del contenitore, non con quello del contenuto), fino a
+// dove estendere le linee della griglia — altrimenti la griglia resta un rombo legato
+// ai bound del contenuto e lascia angoli vuoti nel rettangolo del viewport.
+function invProj(x: number, y: number) {
+  const det = GX_X * GY_Y + GY_X * GX_Y;
+  return { gx: (GY_Y * x + GY_X * y) / det, gy: (-GX_Y * x + GX_X * y) / det };
+}
 
 function plotCorners(hs: any) {
   return [
@@ -147,17 +155,49 @@ function buildBoard() {
   if (!svg || !props.houses.length) return;
   svg.innerHTML = "";
 
-  const { gxMin, gxMax, gyMin, gyMax } = props.gridBounds;
+  const { gxMin: gxMin0, gxMax: gxMax0, gyMin: gyMin0, gyMax: gyMax0 } = props.gridBounds;
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  [[gxMin, gyMin], [gxMax, gyMin], [gxMax, gyMax], [gxMin, gyMax]].forEach(([gx, gy]) => {
+  [[gxMin0, gyMin0], [gxMax0, gyMin0], [gxMax0, gyMax0], [gxMin0, gyMax0]].forEach(([gx, gy]) => {
     const p = proj(gx, gy);
     minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
     minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
   });
   const pad = 30;
-  const vbX = minX - pad, vbY = minY - pad, vbW = (maxX - minX) + pad * 2, vbH = (maxY - minY) + pad * 2;
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  // CROP_FACTOR: la vista è volutamente "zoomata" sul centro della board, così i lotti
+  // più esterni escono un po' dal bordo dello schermo (tagliati dalla cornice, dato che
+  // l'<svg> non ha overflow:visible) invece di restare tutti interamente visibili con
+  // aria morta intorno — dà la sensazione che la mappa continui oltre quello che si vede.
+  const CROP_FACTOR = 0.78;
+  const contentW = ((maxX - minX) + pad * 2) * CROP_FACTOR;
+  const contentH = ((maxY - minY) + pad * 2) * CROP_FACTOR;
+
+  // Il viewBox deve combaciare ESATTAMENTE con l'aspect ratio del contenitore reale
+  // (non con quello del contenuto): altrimenti preserveAspectRatio introduce bande
+  // vuote (letterboxing) sui lati corti — è la causa diretta delle "zone senza griglia"
+  // segnalate. Si allarga (mai si restringe) solo la dimensione necessaria, centrando
+  // sul centro del contenuto originale.
+  const wrapRect = svg.getBoundingClientRect();
+  const ar = wrapRect.width && wrapRect.height ? wrapRect.width / wrapRect.height : contentW / contentH;
+  let vbW = contentW, vbH = contentH;
+  if (contentW / contentH > ar) { vbH = contentW / ar; } else { vbW = contentH * ar; }
+  const vbX = cx - vbW / 2, vbY = cy - vbH / 2;
   svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+
+  // Le linee della griglia devono coprire l'INTERO rettangolo del viewBox, angoli
+  // compresi — non solo il rombo derivato dal bounding box del contenuto. Si
+  // proiettano-all'indietro i 4 angoli del viewBox con invProj() e si arrotonda
+  // per eccesso/difetto con un margine di ±1 cella (la trasformazione lineare di un
+  // rettangolo resta un parallelogramma convesso, quindi i 4 angoli bastano).
+  let gxMin = Infinity, gxMax = -Infinity, gyMin = Infinity, gyMax = -Infinity;
+  [[vbX, vbY], [vbX + vbW, vbY], [vbX + vbW, vbY + vbH], [vbX, vbY + vbH]].forEach(([x, y]) => {
+    const g = invProj(x, y);
+    gxMin = Math.min(gxMin, g.gx); gxMax = Math.max(gxMax, g.gx);
+    gyMin = Math.min(gyMin, g.gy); gyMax = Math.max(gyMax, g.gy);
+  });
+  gxMin = Math.floor(gxMin) - 1; gxMax = Math.ceil(gxMax) + 1;
+  gyMin = Math.floor(gyMin) - 1; gyMax = Math.ceil(gyMax) + 1;
 
   const defs = document.createElementNS(SVGNS, "defs");
   defs.innerHTML = `
@@ -203,12 +243,14 @@ function buildBoard() {
     const bx0 = Math.min(...corners.map(p => p.x)), bx1 = Math.max(...corners.map(p => p.x));
     const by0 = Math.min(...corners.map(p => p.y)), by1 = Math.max(...corners.map(p => p.y));
     const bw = bx1 - bx0, bh = by1 - by0;
-    const w = bw * 0.52, h = w * IMG_ASPECT * 1.1; // *1.1 per il padding del .card
+    const w = bw * 0.72, h = w * IMG_ASPECT * 1.1; // *1.1 per il padding del .card
     const x = bx0 + (bw - w) / 2, y = by0 + (bh - h) / 2 + bh * 0.06;
 
     const fo = el('foreignObject', { x: x.toFixed(1), y: y.toFixed(1), width: w.toFixed(1), height: h.toFixed(1) });
-    const a = document.createElementNS(XHTMLNS, 'a');
-    a.setAttribute('href', `/articolo/${hs.slug}`);
+    // button, non link: l'articolo si apre in una finestra interna alla pagina,
+    // non naviga mai a /articolo/[slug] (quella pagina resta per link diretti).
+    const a = document.createElementNS(XHTMLNS, 'button');
+    a.setAttribute('type', 'button');
     a.setAttribute('class', 'house-btn');
     a.setAttribute('aria-label', `Casa 0${hs.number} — ${hs.title} — apri articolo`);
     const frame = document.createElementNS(XHTMLNS, 'div');
@@ -239,22 +281,32 @@ function buildBoard() {
 
     svg.appendChild(wrap);
 
-    a.addEventListener('mouseenter', () => { wrap.classList.add('house-hover'); readout.value = `Casa 0${hs.number} — ${hs.title} — click per aprire`; });
-    a.addEventListener('mouseleave', () => { wrap.classList.remove('house-hover'); readout.value = 'Ready.'; });
-    a.addEventListener('focus', () => { wrap.classList.add('house-hover'); readout.value = `Casa 0${hs.number} — ${hs.title} — click per aprire`; });
-    a.addEventListener('blur', () => { wrap.classList.remove('house-hover'); readout.value = 'Ready.'; });
+    a.addEventListener('mouseenter', () => { wrap.classList.add('house-hover'); });
+    a.addEventListener('mouseleave', () => { wrap.classList.remove('house-hover'); });
+    a.addEventListener('focus', () => { wrap.classList.add('house-hover'); });
+    a.addEventListener('blur', () => { wrap.classList.remove('house-hover'); });
+    a.addEventListener('click', () => { emit('select', hs); });
   });
 }
 
-onMounted(buildBoard);
+onMounted(() => {
+  buildBoard();
+  let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(buildBoard, 150);
+  });
+});
 watch(() => props.houses, buildBoard, { deep: true });
 </script>
 
 <style>
 /* stile globale (non scoped): il board viene costruito imperativamente nel DOM via JS,
    Vue's scoped CSS non raggiungerebbe i nodi creati con createElementNS/createElement */
-.board-wrap{ max-width: 1200px; margin: 8px auto 32px; padding: 0 16px; }
-#board-svg{ display:block; width:100%; height:auto; border-radius:4px; }
+/* la board riempie tutto lo spazio disponibile sotto la topbar (vedi app.vue) */
+.board-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.board-wrap{ flex:1 1 auto; min-height:0; display:flex; }
+#board-svg{ display:block; width:100%; height:100%; }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
@@ -270,8 +322,8 @@ watch(() => props.houses, buildBoard, { deep: true });
 .list{ display:none; }
 @media (max-width: 760px){
   .board-wrap{ display:none; }
-  .list{ display:flex; flex-direction:column; align-items:center; gap:28px; padding:8px 20px 32px; }
-  .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; }
+  .list{ display:flex; flex-direction:column; align-items:center; gap:28px; padding:8px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
+  .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
   .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }
   .list .caption{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; }
 }

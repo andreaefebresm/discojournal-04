@@ -1,19 +1,10 @@
 <template>
-  <div>
-    <header>
-      <div class="kicker">DiSCo Journal · Issue 04</div>
-      <h1>Digital Diaspora</h1>
-      <p>Cinque articoli, cinque case sullo stesso tabellone isometrico — click su una casa per aprire l'articolo.</p>
-    </header>
-
-    <IsoBoard v-if="houses && houses.length" :houses="houses" :grid-bounds="GRID_BOUNDS" />
+  <div class="page-root">
+    <IsoBoard v-if="houses && houses.length" :houses="houses" :grid-bounds="GRID_BOUNDS" @select="selected = $event" />
     <p v-else-if="pending" class="note">Caricamento…</p>
     <p v-else class="note">Nessuna casa trovata — controlla il content model su Contentful o i dati locali di esempio.</p>
 
-    <footer>
-      <div id="readout">{{ readout }}</div>
-      <div>{{ dateline }}</div>
-    </footer>
+    <HouseModal :house="selected" @close="selected = null" />
   </div>
 </template>
 
@@ -21,6 +12,14 @@
 import { GRID_BOUNDS } from '../data/houseLayout';
 
 const { data: houses, pending } = await useFetch('/api/houses');
-const readout = useState<string>('board-readout', () => 'Ready.');
-const dateline = new Date().toLocaleString('it-IT', { month: 'short', year: 'numeric' });
+// L'articolo si apre come finestra interna (HouseModal), non navigando a /articolo/[slug]
+// (quella pagina resta comunque, utile per un link diretto condivisibile in futuro).
+// /api/houses restituisce già titolo+immagine+corpo di ogni casa, quindi qui non serve
+// un'altra chiamata quando si apre la finestra.
+const selected = ref<any | null>(null);
 </script>
+
+<style scoped>
+.page-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.note{ max-width:640px; margin:40px auto; padding:0 24px; text-align:center; font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:13px; color:var(--ink-soft); }
+</style>
