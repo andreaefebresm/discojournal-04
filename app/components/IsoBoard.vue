@@ -319,8 +319,10 @@ watch(() => props.houses, buildBoard, { deep: true });
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
 .house-btn:hover .house-frame, .house-btn:focus-visible .house-frame{ transform: translateY(-4%) scale(1.05); }
-.house-frame .card{ width:100%; display:block; background:#faf8f2; border:1px solid rgba(20,17,12,.10); border-radius:5px; padding:5%; box-shadow:0 10px 16px rgba(15,13,10,.35); }
-.house-frame img{ width:100%; display:block; border-radius:2px; }
+/* Niente più cornice bianca: la foto sta a filo, senza sfondo/bordo/ombra/angoli propri —
+   solo il rombo scuro del lotto sotto la separa dalla griglia. */
+.house-frame .card{ width:100%; display:block; }
+.house-frame img{ width:100%; display:block; }
 
 .house-badge{ font-family:Georgia,serif; font-size:13px; fill:#efe9d8; }
 .house-cap{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; fill:#6b6558; opacity:0; transition:opacity .25s ease; pointer-events:none; }
