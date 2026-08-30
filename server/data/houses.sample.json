@@ -1,42 +1,42 @@
 [
   {
-    "slug": "casa-piscina",
+    "slug": "isola-charlotte",
     "number": 1,
-    "title": "Casa piscina",
-    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 01.",
-    "image": { "url": "/assets/houses/casa1_piscina.png", "width": 1200, "height": 654 },
+    "title": "Charlotte Schuitenmaker",
+    "excerpt": "Pratiche musicali urbane indigene australiane.",
+    "image": { "url": "/assets/islands/island1_charlotte.png", "width": 2400, "height": 1792 },
     "body": ["Testo segnaposto dell'articolo 01. Sostituire con il contenuto reale da Contentful."]
   },
   {
-    "slug": "torre",
+    "slug": "isola-fareda",
     "number": 2,
-    "title": "Torre",
-    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 02.",
-    "image": { "url": "/assets/houses/casa2_torre.png", "width": 1200, "height": 654 },
+    "title": "Fareda El Shaaer",
+    "excerpt": "Accento egiziano, tecnologie di riconoscimento vocale e identità diasporica.",
+    "image": { "url": "/assets/islands/island2_fareda.png", "width": 2400, "height": 1792 },
     "body": ["Testo segnaposto dell'articolo 02. Sostituire con il contenuto reale da Contentful."]
   },
   {
-    "slug": "serra",
+    "slug": "isola-april",
     "number": 3,
-    "title": "Serra",
-    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 03.",
-    "image": { "url": "/assets/houses/casa3_serra.png", "width": 1200, "height": 654 },
+    "title": "April Wei-West",
+    "excerpt": "Comunità online di vocal synth e affordance delle piattaforme di ascolto (ricerca sul campo in Giappone).",
+    "image": { "url": "/assets/islands/island3_april.png", "width": 2400, "height": 1792 },
     "body": ["Testo segnaposto dell'articolo 03. Sostituire con il contenuto reale da Contentful."]
   },
   {
-    "slug": "loft",
+    "slug": "isola-nicole",
     "number": 4,
-    "title": "Loft",
-    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 04.",
-    "image": { "url": "/assets/houses/casa4_loft.png", "width": 1200, "height": 654 },
+    "title": "Nicole Furtado",
+    "excerpt": "Racconto sf su scarsità d'acqua e IA, ispirato alle Hawaii.",
+    "image": { "url": "/assets/islands/island4_nicole.png", "width": 2400, "height": 1792 },
     "body": ["Testo segnaposto dell'articolo 04. Sostituire con il contenuto reale da Contentful."]
   },
   {
-    "slug": "cottage",
+    "slug": "isola-crassula",
     "number": 5,
-    "title": "Cottage",
-    "excerpt": "Placeholder — sostituire con l'estratto reale dell'articolo 05.",
-    "image": { "url": "/assets/houses/casa5_cottage.png", "width": 1200, "height": 654 },
+    "title": "Crassula Shang",
+    "excerpt": "Chinese Cyberfeminism Archive.",
+    "image": { "url": "/assets/islands/island5_crassula.png", "width": 1200, "height": 896 },
     "body": ["Testo segnaposto dell'articolo 05. Sostituire con il contenuto reale da Contentful."]
   }
 ]

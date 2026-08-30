@@ -1,5 +1,5 @@
 import { getContentfulClient, mapHouseEntry } from "../utils/contentful";
-import { HOUSE_LAYOUT } from "../../app/data/houseLayout";
+import { ISLAND_LAYOUT } from "../../app/data/islandLayout";
 import sample from "../data/houses.sample.json";
 
 // GET /api/houses — lista delle case per il tabellone.
@@ -24,9 +24,9 @@ export default defineEventHandler(async (event) => {
   // aggancia il layout di griglia (di proprietà del codice, non del CMS) per slug
   const withLayout = houses
     .map((h) => {
-      const layout = HOUSE_LAYOUT[h.slug];
+      const layout = ISLAND_LAYOUT[h.slug];
       if (!layout) {
-        console.warn(`[api/houses] nessun layout di griglia per slug "${h.slug}" — casa esclusa dal tabellone. Aggiungila in app/data/houseLayout.ts`);
+        console.warn(`[api/houses] nessun layout di griglia per slug "${h.slug}" — isola esclusa dal tabellone. Aggiungila in app/data/islandLayout.ts`);
         return null;
       }
       return { ...h, ...layout };

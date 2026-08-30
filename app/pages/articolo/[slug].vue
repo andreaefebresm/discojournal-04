@@ -1,7 +1,7 @@
 <template>
   <article v-if="house">
     <NuxtLink to="/" class="back">← torna al tabellone</NuxtLink>
-    <div class="badge">Casa 0{{ house.number }}</div>
+    <div class="badge">Isola 0{{ house.number }}</div>
     <h1>{{ house.title }}</h1>
     <img v-if="house.image" :src="house.image.url" :alt="house.title" class="hero" />
     <div class="body" v-html="bodyHtml"></div>

@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { GRID_BOUNDS } from '../data/houseLayout';
+import { GRID_BOUNDS } from '../data/islandLayout';
 
 const { data: houses, pending } = await useFetch('/api/houses');
 // L'articolo si apre come finestra interna (HouseModal), non navigando a /articolo/[slug]

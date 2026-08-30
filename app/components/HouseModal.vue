@@ -1,12 +1,13 @@
 <template>
   <div class="modal-backdrop" :class="{ open: !!house }" @click.self="$emit('close')">
-    <div v-if="house" class="modal-window" role="dialog" aria-modal="true" :aria-label="`Casa 0${house.number} — ${house.title}`">
+    <div v-if="house" class="modal-window" role="dialog" aria-modal="true" :aria-label="`Isola 0${house.number} — ${house.title}`">
       <div class="modal-titlebar">
-        <span>Casa 0{{ house.number }} — {{ house.title }}</span>
+        <span>Isola 0{{ house.number }} — {{ house.title }}</span>
         <button class="modal-close" type="button" aria-label="Chiudi" @click="$emit('close')">✕</button>
       </div>
       <div class="modal-body">
         <img v-if="house.image" :src="house.image.url" :alt="house.title" />
+        <p v-if="house.excerpt" class="modal-excerpt">{{ house.excerpt }}</p>
         <div v-html="bodyHtml"></div>
       </div>
     </div>
@@ -74,4 +75,5 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 .modal-body{ padding:20px; }
 .modal-body img{ width:100%; border-radius:6px; display:block; margin-bottom:16px; filter: drop-shadow(0 10px 16px rgba(15,13,10,0.2)); }
 .modal-body p{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:14px; line-height:1.6; color:var(--ink); margin:0 0 12px; }
+.modal-excerpt{ font-style:italic; color:var(--ink-soft); }
 </style>
