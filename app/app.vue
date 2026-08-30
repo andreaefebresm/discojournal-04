@@ -10,7 +10,7 @@
 :root{ --ink:#232019; --ink-soft:#6b6558; }
 *{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
-body{ font-family: Georgia, "Iowan Old Style", serif; background:#f4f2ec; color:var(--ink); }
+body{ font-family: "Fraunces", Georgia, "Iowan Old Style", serif; background:#f4f2ec; color:var(--ink); }
 
 /* shell a tutta pagina: la topbar ora è un overlay trasparente (position:absolute, vedi
    TopNav.vue) sopra il mosaico del mare, non più una riga di flex che spinge la board in

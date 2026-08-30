@@ -79,21 +79,31 @@ const ISLAND_HW = 1792 / 2400;
 // repulsione passiva). "Terra" = un'ellisse inscritta nell'ingombro di ogni isola.
 // ================================================================================================
 function createWalkerLayer() {
-  // Un solo gruppo, tutti neri: gli omini restano SEMPRE in acqua (a nuoto), non più
-  // "a terra" sulle isole — vedi landAvoidForce più sotto, che li respinge fuori dal
-  // perimetro di ogni isola invece di farli camminare sopra.
-  const GROUPS = [
-    { color: '#161412', n: 15 },
-  ];
-  const REPEL_RADIUS = 16;
-  const REPEL_STRENGTH = 220;
-  const MAX_SPEED = 5.2;
-  const LAND_PUSH_STRENGTH = 260; // forza con cui vengono respinti se finiscono sopra un'isola
-  const LAND_MARGIN = 22; // margine extra (unità di griglia) oltre il perimetro "visivo" dell'isola
+  // Round 2: "tantissimi di più", bianchi come le linee/grout del mosaico, più piccoli,
+  // sparsi ovunque nel mare (non solo vicino alle isole) e a GRUPPI PIÙ FITTI (prima
+  // separazione soltanto, ora anche un richiamo verso il centro del proprio gruppo — vedi
+  // COHESION_STRENGTH). Restano sempre "a nuoto": testa più opaca (resta "a pelo d'acqua"),
+  // corpo più trasparente con un'opacità fissa per omino (si "perdono" nel blu, alcuni più
+  // sfumati di altri, come nuotassero a profondità diverse). Mouse-repulsione più decisa.
+  const WALKER_COLOR = '#f4f8ff';
+  const NUM_GROUPS = 9;
+  const GROUP_SIZE = 15;       // 9x15 = 135 omini — erano 15 in tutto
+  const WALKER_SCALE = 13;     // erano 26: la metà, "più piccoli"
 
-  // spinge un omino fuori dal perimetro ellittico (+margine) di un'isola, in direzione
-  // radiale — usata sia come forza morbida in step() sia come vincolo rigido a fine step.
-  function landAvoidForce(w: any, dt: number) {
+  const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
+  const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
+  const MAX_SPEED = 6.5;
+
+  const SEP_RADIUS = 4;        // erano 7: si stringono di più (gruppi più fitti)
+  const SEP_STRENGTH = 5;
+  const COHESION_STRENGTH = 1.1; // richiamo verso il centro del proprio gruppo
+
+  const LAND_PUSH_STRENGTH = 260; // forza con cui vengono respinti se finiscono sopra un'isola
+  const LAND_MARGIN = 16;
+
+  // spinge un punto (omino o centro-gruppo) fuori dal perimetro ellittico di un'isola se
+  // ci si trova dentro, in direzione radiale (via via più forte quanto più è "dentro").
+  function landAvoidForce(w: any, dt: number, strength: number) {
     props.houses.forEach(isl => {
       const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
       const rx = isl.cols / 2 * 0.82, ry = isl.rows / 2 * 0.82;
@@ -102,21 +112,18 @@ function createWalkerLayer() {
       if (d2 < 1) {
         const rdx = w.gx - cx, rdy = w.gy - cy;
         const rd = Math.hypot(rdx, rdy) || 0.001;
-        const f = (1 - d2) * LAND_PUSH_STRENGTH * dt;
+        const f = (1 - d2) * strength * dt;
         w.vx += rdx / rd * f; w.vy += rdy / rd * f;
       }
     });
   }
-  // vincolo rigido, non solo una forza: garantisce che il CENTRO dell'omino non entri
-  // mai nell'area (isola + margine) — la sola forza poteva essere sopraffatta da altre
-  // forze (mouse, richiamo al centro) e lasciarli per un istante sovrapposti al bordo
-  // della PNG. Margine additivo in unità di griglia (non percentuale): la sagoma del
-  // pittogramma, a schermo, ha un ingombro pressoché costante indipendentemente dalla
-  // dimensione dell'isola.
-  function clampOffLand(w: any) {
+  // vincolo rigido (non solo una forza): garantisce che il punto non entri mai nell'area
+  // (isola + margine) — la sola forza poteva essere sopraffatta da altre forze e lasciare
+  // per un istante l'omino visibilmente sovrapposto al bordo della PNG.
+  function clampOffLand(w: any, margin: number) {
     props.houses.forEach(isl => {
       const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
-      const rx = isl.cols / 2 * 0.82 + LAND_MARGIN, ry = isl.rows / 2 * 0.82 + LAND_MARGIN;
+      const rx = isl.cols / 2 * 0.82 + margin, ry = isl.rows / 2 * 0.82 + margin;
       const ex = (w.gx - cx) / rx, ey = (w.gy - cy) / ry;
       const ed = Math.hypot(ex, ey);
       if (ed < 1) {
@@ -129,40 +136,58 @@ function createWalkerLayer() {
     });
   }
 
+  // stato della simulazione: creato UNA VOLTA sola (persiste tra i resize/rebuild della board,
+  // che invece ricreano tutto il DOM svg da zero via svg.innerHTML='')
+  let groups: any[] | null = null; // centri dei gruppi: vagano lentamente per tutto il mare
   let walkers: any[] | null = null;
   function initWalkers() {
-    walkers = [];
-    // partono già in acqua, sparsi in un anello intorno al centro di tutte le isole —
-    // non più "vicino a una casa": restano sempre a nuoto, mai sulla terra.
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
-    GROUPS.forEach((g, gi) => {
-      for (let i = 0; i < g.n; i++) {
+    // i centri-gruppo partono sparsi su un'area molto ampia: è quello che dà l'effetto
+    // "sparsi in giro nell'acqua" invece che ammassati vicino alle isole.
+    groups = [];
+    for (let i = 0; i < NUM_GROUPS; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 70 + Math.random() * 400;
+      groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8 });
+    }
+    walkers = [];
+    groups.forEach((g, gi) => {
+      for (let i = 0; i < GROUP_SIZE; i++) {
         const a = Math.random() * Math.PI * 2;
-        const r = 90 + Math.random() * 90;
+        const r = Math.random() * 20;
         walkers!.push({
-          group: gi, color: g.color,
-          gx: cx0 + Math.cos(a) * r,
-          gy: cy0 + Math.sin(a) * r,
-          vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
+          group: gi,
+          gx: g.gx + Math.cos(a) * r,
+          gy: g.gy + Math.sin(a) * r,
+          vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5,
           phase: Math.random() * Math.PI * 2,
           wanderT: Math.random() * 10,
+          // opacità fissa per omino, non ricalcolata a ogni frame: dà la sensazione che
+          // alcuni nuotino "più in superficie" (più opachi) e altri "più sotto" (più
+          // sfumati, quasi persi nel blu) — vedi buildPictogram.
+          depthOpacity: 0.45 + Math.random() * 0.55,
         });
       }
     });
   }
   initWalkers();
 
-  function buildPictogram(color: string) {
+  // ---- pittogramma piatto: testa + busto + gambe/braccia a linea semplice. La testa resta
+  // quasi opaca ("a pelo d'acqua"), il resto del corpo molto più trasparente ("sott'acqua,
+  // che si perde") — opacità di base modulata dalla depthOpacity fissa dell'omino.
+  function buildPictogram(color: string, depthOpacity: number) {
+    const bodyOp = (0.20 + 0.45 * depthOpacity).toFixed(2);
+    const headOp = (0.72 + 0.28 * depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
     const shadow = el('ellipse', { cx: 0, cy: 5.5, rx: 4.2, ry: 1.6, fill: 'rgba(10,30,35,0.25)' });
-    const legL = el('line', { x1: 0, y1: 0, x2: -3, y2: 5, stroke: color, 'stroke-width': 1.6, 'stroke-linecap': 'round' });
-    const legR = el('line', { x1: 0, y1: 0, x2: 3, y2: 5, stroke: color, 'stroke-width': 1.6, 'stroke-linecap': 'round' });
-    const armL = el('line', { x1: 0, y1: -4, x2: -3, y2: 0, stroke: color, 'stroke-width': 1.3, 'stroke-linecap': 'round' });
-    const armR = el('line', { x1: 0, y1: -4, x2: 3, y2: 0, stroke: color, 'stroke-width': 1.3, 'stroke-linecap': 'round' });
-    const torso = el('line', { x1: 0, y1: -4, x2: 0, y2: 0.5, stroke: color, 'stroke-width': 2.2, 'stroke-linecap': 'round' });
-    const head = el('circle', { cx: 0, cy: -6, r: 2.1, fill: color });
-    const ripple = el('circle', { cx: 0, cy: 0, r: 2, fill: 'none', stroke: '#eaf6fb', 'stroke-width': 0.8, opacity: 0 });
+    const legL = el('line', { x1: 0, y1: 0, x2: -3, y2: 5, stroke: color, 'stroke-width': 1.6, 'stroke-linecap': 'round', opacity: bodyOp });
+    const legR = el('line', { x1: 0, y1: 0, x2: 3, y2: 5, stroke: color, 'stroke-width': 1.6, 'stroke-linecap': 'round', opacity: bodyOp });
+    const armL = el('line', { x1: 0, y1: -4, x2: -3, y2: 0, stroke: color, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: bodyOp });
+    const armR = el('line', { x1: 0, y1: -4, x2: 3, y2: 0, stroke: color, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: bodyOp });
+    const torso = el('line', { x1: 0, y1: -4, x2: 0, y2: 0.5, stroke: color, 'stroke-width': 2.2, 'stroke-linecap': 'round', opacity: bodyOp });
+    const head = el('circle', { cx: 0, cy: -6, r: 2.1, fill: color, opacity: headOp });
+    const ripple = el('circle', { cx: 0, cy: 0, r: 2, fill: 'none', stroke: color, 'stroke-width': 0.8, opacity: 0 });
     [shadow, legL, legR, armL, armR, torso, head, ripple].forEach(n => g.appendChild(n));
     return { g, legL, legR, armL, armR, torso, head, shadow, ripple };
   }
@@ -180,17 +205,42 @@ function createWalkerLayer() {
   function step(dt: number) {
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
-    const boundR = 170;
+    const GROUP_BOUND_R = 460; // i centri-gruppo possono vagare MOLTO più lontano di prima
+
+    // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole
+    groups!.forEach(g => {
+      g.wanderT -= dt;
+      if (g.wanderT <= 0) {
+        g.vx += (Math.random() - 0.5) * 0.6;
+        g.vy += (Math.random() - 0.5) * 0.6;
+        g.wanderT = 3 + Math.random() * 4;
+      }
+      const dxc = cx0 - g.gx, dyc = cy0 - g.gy, dc = Math.hypot(dxc, dyc);
+      if (dc > GROUP_BOUND_R) { g.vx += dxc / dc * 1.2 * dt * 10; g.vy += dyc / dc * 1.2 * dt * 10; }
+      landAvoidForce(g, dt, LAND_PUSH_STRENGTH * 0.6);
+      g.vx *= 0.96; g.vy *= 0.96;
+      const gsp = Math.hypot(g.vx, g.vy);
+      if (gsp > 1.4) { g.vx = g.vx / gsp * 1.4; g.vy = g.vy / gsp * 1.4; }
+      g.gx += g.vx * dt; g.gy += g.vy * dt;
+      clampOffLand(g, LAND_MARGIN + 10);
+    });
 
     walkers!.forEach(w => {
       w.wanderT -= dt;
       if (w.wanderT <= 0) {
-        w.vx += (Math.random() - 0.5) * 1.8;
-        w.vy += (Math.random() - 0.5) * 1.8;
+        w.vx += (Math.random() - 0.5) * 1.2;
+        w.vy += (Math.random() - 0.5) * 1.2;
         w.wanderT = 1 + Math.random() * 1.5;
       }
-      const dxc = cx0 - w.gx, dyc = cy0 - w.gy, dc = Math.hypot(dxc, dyc);
-      if (dc > boundR) { w.vx += dxc / dc * 1.6 * dt * 10; w.vy += dyc / dc * 1.6 * dt * 10; }
+      // richiamo verso il centro del proprio gruppo — è questo che tiene i gruppi "fitti"
+      // mentre vagano insieme, invece di disperdersi in un'unica nuvola uniforme
+      const gc = groups![w.group];
+      const dxg = gc.gx - w.gx, dyg = gc.gy - w.gy, dg = Math.hypot(dxg, dyg);
+      if (dg > 0.001) {
+        const f = Math.min(dg, 40) * COHESION_STRENGTH * dt * 0.1;
+        w.vx += dxg / dg * f; w.vy += dyg / dg * f;
+      }
+      // repulsione dal mouse — mai afferrabili, solo si scostano (ora molto più marcata)
       if (pointerGrid) {
         const dx = w.gx - pointerGrid.gx, dy = w.gy - pointerGrid.gy, d = Math.hypot(dx, dy);
         if (d < REPEL_RADIUS && d > 0.001) {
@@ -198,22 +248,25 @@ function createWalkerLayer() {
           w.vx += dx / d * f; w.vy += dy / d * f;
         }
       }
+      // separazione dagli altri omini dello STESSO gruppo, raggio corto: si stringono
+      // parecchio prima di respingersi, da cui l'effetto "gruppo fitto" invece che sparpagliato
       walkers!.forEach(o => {
         if (o === w || o.group !== w.group) return;
         const dx = w.gx - o.gx, dy = w.gy - o.gy, d = Math.hypot(dx, dy);
-        if (d > 0.001 && d < 7) { w.vx += dx / d * 6 * dt; w.vy += dy / d * 6 * dt; }
+        if (d > 0.001 && d < SEP_RADIUS) { w.vx += dx / d * SEP_STRENGTH * dt; w.vy += dy / d * SEP_STRENGTH * dt; }
       });
       // restano sempre in acqua: se finiscono dentro il perimetro di un'isola vengono
-      // respinti fuori (niente più camminata "a terra" sopra le isole)
-      landAvoidForce(w, dt);
+      // respinti fuori (niente camminata "a terra" sopra le isole)
+      landAvoidForce(w, dt, LAND_PUSH_STRENGTH);
 
-      w.vx *= 0.94; w.vy *= 0.94;
+      w.vx *= 0.92; w.vy *= 0.92;
       const sp = Math.hypot(w.vx, w.vy);
       if (sp > MAX_SPEED) { w.vx = w.vx / sp * MAX_SPEED; w.vy = w.vy / sp * MAX_SPEED; }
 
       w.gx += w.vx * dt; w.gy += w.vy * dt;
       w.phase += dt * (2.5 + sp * 0.8);
-      clampOffLand(w);
+
+      clampOffLand(w, LAND_MARGIN);
     });
   }
 
@@ -221,6 +274,9 @@ function createWalkerLayer() {
     walkers!.forEach(w => {
       if (!w.dom) return;
       const p = proj(w.gx, w.gy);
+      // direzione di marcia proiettata (proj è lineare: si proietta il VETTORE velocità, non
+      // solo il punto, altrimenti l'angolo su schermo sarebbe sbagliato per via dell'asimmetria
+      // degli assi gx/gy)
       const pv = proj(w.gx + w.vx * 0.2, w.gy + w.vy * 0.2);
       const heading = Math.atan2(pv.y - p.y, pv.x - p.x) * 180 / Math.PI;
       const swing = Math.sin(w.phase) * 30;
@@ -230,7 +286,7 @@ function createWalkerLayer() {
       // di marcia), leggero bob verticale, gambe a battito simmetrico, un'ondina che si
       // espande sotto — non camminano più sopra le isole.
       const bob = Math.sin(w.phase * 1.3) * 1.2;
-      g.setAttribute('transform', `translate(${p.x.toFixed(1)},${(p.y + bob).toFixed(1)}) rotate(${(heading + 90).toFixed(1)}) scale(26)`);
+      g.setAttribute('transform', `translate(${p.x.toFixed(1)},${(p.y + bob).toFixed(1)}) rotate(${(heading + 90).toFixed(1)}) scale(${WALKER_SCALE})`);
       legL.setAttribute('transform', `rotate(${swing * 0.6})`);
       legR.setAttribute('transform', `rotate(${-swing * 0.6})`);
       armL.setAttribute('transform', `rotate(${-10 - swing * 0.3})`);
@@ -238,7 +294,7 @@ function createWalkerLayer() {
       shadow.setAttribute('opacity', '0');
       const rr = 2 + ((w.phase * 3) % 6);
       ripple.setAttribute('r', rr.toFixed(1));
-      ripple.setAttribute('opacity', Math.max(0, 0.5 - rr / 12).toFixed(2));
+      ripple.setAttribute('opacity', Math.max(0, 0.4 - rr / 12).toFixed(2));
     });
   }
 
@@ -254,12 +310,12 @@ function createWalkerLayer() {
 
   return {
     // richiamato a ogni buildBoard(): il DOM svg viene svuotato e ricostruito da zero, ma lo
-    // STATO della simulazione (posizioni/velocità in walkers) resta invariato.
+    // STATO della simulazione (posizioni/velocità in walkers/groups) resta invariato — nessun "salto".
     mount(svg: SVGSVGElement) {
       mountedSvg = svg;
       const layer = el('g', { class: 'walker-layer' });
       walkers!.forEach(w => {
-        w.dom = buildPictogram(w.color);
+        w.dom = buildPictogram(WALKER_COLOR, w.depthOpacity);
         layer.appendChild(w.dom.g);
       });
       svg.appendChild(layer);
@@ -583,12 +639,12 @@ watch(() => props.houses, buildBoard, { deep: true });
   filter: drop-shadow(0 14px 18px rgba(5,20,25,0.45));
 }
 
-.house-badge{ font-family:Georgia,serif; fill:#efe9d8; }
+.house-badge{ font-family:"Inter",-apple-system,sans-serif; fill:#efe9d8; }
 /* didascalia SEMPRE visibile sotto ogni isola (prima appariva solo in hover) — solo il
    titolo dell'articolo (niente più "Isola 0N —"). paint-order+stroke bianco invece di un
    text-shadow: resta leggibile sopra il mosaico del mare qualsiasi sia il tono di blu sotto. */
 .house-cap{
-  font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
   font-weight:600;
   fill:var(--ink, #232019);
   paint-order:stroke;
@@ -604,6 +660,6 @@ watch(() => props.houses, buildBoard, { deep: true });
   .list{ display:flex; flex-direction:column; align-items:center; gap:28px; padding:8px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
   .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
   .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }
-  .list .caption{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; }
+  .list .caption{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; }
 }
 </style>

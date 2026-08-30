@@ -85,7 +85,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
   padding:14px 22px;
   background:#2c2620; color:#efe9d8;
   border-radius:8px 8px 0 0;
-  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-size:14px; letter-spacing:.02em;
 }
 .modal-close{
@@ -101,16 +101,16 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 /* ---- stili di testo differenziati dentro l'articolo: paragrafo normale, sottotitolo (h3),
    citazione/estratto (blockquote), grassetto/corsivo/link inline — così il corpo non è più
    un unico blocco uniforme di testo. */
-.modal-body p{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:15px; line-height:1.7; color:var(--ink); margin:0 0 16px; }
+.modal-body p{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:15px; line-height:1.7; color:var(--ink); margin:0 0 16px; }
 .modal-body h3{
-  font-family: Georgia, "Iowan Old Style", serif;
+  font-family: "Fraunces", Georgia, "Iowan Old Style", serif;
   font-size: 20px; font-weight: normal; font-style: italic;
   color: var(--ink); margin: 28px 0 10px;
 }
 .modal-body blockquote{
   margin: 20px 0; padding: 4px 0 4px 18px;
   border-left: 3px solid #c9a86a;
-  font-family: Georgia, "Iowan Old Style", serif;
+  font-family: "Fraunces", Georgia, "Iowan Old Style", serif;
   font-size: 17px; font-style: italic; line-height:1.5;
   color: #4a4438;
 }

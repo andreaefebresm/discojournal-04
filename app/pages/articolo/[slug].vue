@@ -45,13 +45,13 @@ const bodyHtml = computed(() => {
 </script>
 
 <style scoped>
-article{ max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; font-family: Georgia, serif; color:#232019; }
-.back{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-decoration:none; }
-.badge{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#b0a98f; margin-top:20px; }
+article{ max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; }
+.back{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-decoration:none; }
+.badge{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#b0a98f; margin-top:20px; }
 h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
 .hero{ width:100%; border-radius:6px; margin-bottom:24px; filter: drop-shadow(0 10px 16px rgba(15,13,10,.2)); }
-.body{ line-height:1.7; font-size:16px; }
-.body h3{ font-style:italic; font-weight:normal; font-size:20px; margin:28px 0 10px; }
-.body blockquote{ margin:20px 0; padding:4px 0 4px 18px; border-left:3px solid #c9a86a; font-style:italic; color:#4a4438; }
-.note{ text-align:center; padding:60px 24px; font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; color:#6b6558; }
+.body{ line-height:1.7; font-size:16px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; }
+.body h3{ font-family:"Fraunces",Georgia,serif; font-style:italic; font-weight:normal; font-size:20px; margin:28px 0 10px; }
+.body blockquote{ font-family:"Fraunces",Georgia,serif; margin:20px 0; padding:4px 0 4px 18px; border-left:3px solid #c9a86a; font-style:italic; color:#4a4438; }
+.note{ text-align:center; padding:60px 24px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; color:#6b6558; }
 </style>
