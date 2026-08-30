@@ -13,7 +13,7 @@
         @click="$emit('select', hs)"
       >
         <img :src="hs.image?.url" :alt="`${hs.title}, isola 0${hs.number}`" loading="lazy" />
-        <div class="caption">Isola 0{{ hs.number }} — {{ hs.title }}</div>
+        <div class="caption">{{ hs.title }}</div>
       </button>
     </div>
   </div>
@@ -329,6 +329,19 @@ function buildBoard() {
   svg.setAttribute('viewBox', `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
 
+  // ---- scala px-schermo/unità-griglia-proiettata: con le isole il viewBox copre un'area
+  // enorme in unità di griglia (~0.05 px-schermo per unità), quindi un font-size "13" in
+  // stile CSS sul <text> dell'SVG (che vale 13 UNITÀ DI GRIGLIA, non 13px reali) risulta di
+  // fatto invisibile (<1px a schermo) — badge/didascalia usano dimensioni calcolate da questa
+  // scala, non valori fissi, così restano leggibili qualunque sia la dimensione della finestra.
+  const pxPerUnit = wrapRect.width / vbW;
+  const CAP_FONT = 14 / pxPerUnit;
+  const CAP_STROKE = 3 / pxPerUnit;
+  const CAP_GAP = 16 / pxPerUnit;
+  const BADGE_R = 15 / pxPerUnit;
+  const BADGE_FONT = 13 / pxPerUnit;
+  const BADGE_STROKE = 1.2 / pxPerUnit;
+
   // ---- MARE "piscina": mosaico di tessere allineato via patternTransform (proj() è
   // lineare, quindi si esprime come matrix() SVG — vedi disco-mockup/index.html per la
   // spiegazione completa), tre profondità (deep/mid/shallow) a gradini/spigoli intorno a
@@ -488,6 +501,10 @@ function buildBoard() {
     img.setAttribute('alt', `${hs.title}, isola 0${hs.number}`);
     // niente loading="lazy": dentro un <foreignObject> di un SVG con overflow:hidden
     // l'euristica di lazy-load può non caricare mai l'immagine (bug già documentato).
+    // fase/durata del "galleggiamento" leggermente diverse per isola (delay negativo = parte
+    // già a metà ciclo), così non fluttuano tutte in sincrono — vedi @keyframes islandFloat.
+    card.style.animationDelay = (-(hs.number * 1.7)).toFixed(1) + 's';
+    card.style.animationDuration = (6.5 + (hs.number % 3) * 0.6).toFixed(1) + 's';
     card.appendChild(img);
     frame.appendChild(card);
     btn.appendChild(frame);
@@ -496,14 +513,20 @@ function buildBoard() {
     const wrap = el('g', {});
     wrap.appendChild(fo);
 
+    // badge numero, sopra l'isola — dimensioni calcolate dalla scala px/unità (vedi sopra),
+    // non più fisse: a questa scala un raggio "13" fisso era sub-pixel e invisibile.
     const badgeCx = bx0 + bw * 0.08, badgeCy = by0 + bh * 0.10;
-    wrap.appendChild(el('circle', { cx: badgeCx, cy: badgeCy, r: 13, fill: '#2c2620', stroke: 'rgba(255,255,255,0.25)', 'stroke-width': 1 }));
-    const bt = el('text', { x: badgeCx, y: badgeCy + 4, 'text-anchor': 'middle', class: 'house-badge' });
+    wrap.appendChild(el('circle', { cx: badgeCx, cy: badgeCy, r: BADGE_R.toFixed(1), fill: '#2c2620', stroke: 'rgba(255,255,255,0.35)', 'stroke-width': BADGE_STROKE.toFixed(2) }));
+    const bt = el('text', { x: badgeCx, y: (badgeCy + BADGE_FONT * 0.36).toFixed(1), 'text-anchor': 'middle', class: 'house-badge' });
+    bt.setAttribute('style', `font-size:${BADGE_FONT.toFixed(1)}px`);
     bt.textContent = '0' + hs.number;
     wrap.appendChild(bt);
 
-    const cap = el('text', { x: bx0 + bw / 2, y: by1 + 16, 'text-anchor': 'middle', class: 'house-cap' });
-    cap.textContent = `Isola 0${hs.number} — ${hs.title}`;
+    // didascalia, sotto l'isola: SOLO il titolo, sempre visibile (prima appariva solo in
+    // hover, e con "Isola 0N —" davanti — il numero resta comunque nel badge sopra l'isola).
+    const cap = el('text', { x: bx0 + bw / 2, y: (by1 + CAP_GAP).toFixed(1), 'text-anchor': 'middle', class: 'house-cap' });
+    cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px; stroke-width:${CAP_STROKE.toFixed(2)}px`);
+    cap.textContent = hs.title;
     wrap.appendChild(cap);
 
     svg.appendChild(wrap);
@@ -541,7 +564,18 @@ watch(() => props.houses, buildBoard, { deep: true });
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
 .house-btn:hover .house-frame, .house-btn:focus-visible .house-frame{ transform: translateY(-4%) scale(1.05); }
-.house-frame .card{ width:100%; display:block; }
+.house-frame .card{
+  width:100%; display:block;
+  /* le isole "fluttuano": un leggero bob verticale continuo sulla card (non sul frame, che
+     porta già l'animazione di hover — due transform sullo stesso elemento confliggerebbero).
+     Fase/durata leggermente diverse per isola (impostate via JS) così non fluttuano tutte
+     in sincrono. */
+  animation: islandFloat 7s ease-in-out infinite;
+}
+@keyframes islandFloat{
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4%); }
+}
 .house-frame img{
   width:100%; display:block;
   /* isole = PNG a sfondo trasparente: ombra portata che segue la sagoma, le fa leggere
@@ -549,9 +583,19 @@ watch(() => props.houses, buildBoard, { deep: true });
   filter: drop-shadow(0 14px 18px rgba(5,20,25,0.45));
 }
 
-.house-badge{ font-family:Georgia,serif; font-size:13px; fill:#efe9d8; }
-.house-cap{ font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; fill:#6b6558; opacity:0; transition:opacity .25s ease; pointer-events:none; }
-.house-hover .house-cap{ opacity:1; }
+.house-badge{ font-family:Georgia,serif; fill:#efe9d8; }
+/* didascalia SEMPRE visibile sotto ogni isola (prima appariva solo in hover) — solo il
+   titolo dell'articolo (niente più "Isola 0N —"). paint-order+stroke bianco invece di un
+   text-shadow: resta leggibile sopra il mosaico del mare qualsiasi sia il tono di blu sotto. */
+.house-cap{
+  font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-weight:600;
+  fill:var(--ink, #232019);
+  paint-order:stroke;
+  stroke:#f4f2ec;
+  stroke-linejoin:round;
+  pointer-events:none;
+}
 .house-hover .house-frame{ transform: translateY(-4%) scale(1.05); }
 
 .list{ display:none; }

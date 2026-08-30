@@ -5,7 +5,11 @@
     "title": "Charlotte Schuitenmaker",
     "excerpt": "Pratiche musicali urbane indigene australiane.",
     "image": { "url": "/assets/islands/island1_charlotte.png", "width": 2400, "height": 1792 },
-    "body": ["Testo segnaposto dell'articolo 01. Sostituire con il contenuto reale da Contentful."]
+    "body": [
+      "## Nota redazionale",
+      "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
+      "Testo segnaposto dell'articolo 01 con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
+    ]
   },
   {
     "slug": "isola-fareda",
@@ -13,7 +17,11 @@
     "title": "Fareda El Shaaer",
     "excerpt": "Accento egiziano, tecnologie di riconoscimento vocale e identità diasporica.",
     "image": { "url": "/assets/islands/island2_fareda.png", "width": 2400, "height": 1792 },
-    "body": ["Testo segnaposto dell'articolo 02. Sostituire con il contenuto reale da Contentful."]
+    "body": [
+      "## Nota redazionale",
+      "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
+      "Testo segnaposto dell'articolo 02 con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
+    ]
   },
   {
     "slug": "isola-april",
@@ -21,7 +29,11 @@
     "title": "April Wei-West",
     "excerpt": "Comunità online di vocal synth e affordance delle piattaforme di ascolto (ricerca sul campo in Giappone).",
     "image": { "url": "/assets/islands/island3_april.png", "width": 2400, "height": 1792 },
-    "body": ["Testo segnaposto dell'articolo 03. Sostituire con il contenuto reale da Contentful."]
+    "body": [
+      "## Nota redazionale",
+      "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
+      "Testo segnaposto dell'articolo 03 con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
+    ]
   },
   {
     "slug": "isola-nicole",
@@ -29,7 +41,11 @@
     "title": "Nicole Furtado",
     "excerpt": "Racconto sf su scarsità d'acqua e IA, ispirato alle Hawaii.",
     "image": { "url": "/assets/islands/island4_nicole.png", "width": 2400, "height": 1792 },
-    "body": ["Testo segnaposto dell'articolo 04. Sostituire con il contenuto reale da Contentful."]
+    "body": [
+      "## Nota redazionale",
+      "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
+      "Testo segnaposto dell'articolo 04 con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
+    ]
   },
   {
     "slug": "isola-crassula",
@@ -37,6 +53,10 @@
     "title": "Crassula Shang",
     "excerpt": "Chinese Cyberfeminism Archive.",
     "image": { "url": "/assets/islands/island5_crassula.png", "width": 1200, "height": 896 },
-    "body": ["Testo segnaposto dell'articolo 05. Sostituire con il contenuto reale da Contentful."]
+    "body": [
+      "## Nota redazionale",
+      "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
+      "Testo segnaposto dell'articolo 05 con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
+    ]
   }
 ]

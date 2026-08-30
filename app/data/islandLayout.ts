@@ -16,12 +16,16 @@ export interface IslandLayout {
   rows: number; // profondità dell'ingombro in celle di griglia
 }
 
+// Dimensioni riavvicinate tra loro ("dimensioni/proporzioni simili" tra le isole, rif.
+// screenshot mandato): prima andavano da 70x60 a 100x65 (spread ampio), ora tutte tra
+// 80-90 di lato — restano le forme/texture di ognuna a differenziarle, non più la
+// dimensione dell'ingombro sulla griglia.
 export const ISLAND_LAYOUT: Record<string, IslandLayout> = {
-  "isola-charlotte": { gx0: 20,   gy0: 85,   cols: 90,  rows: 75 },
-  "isola-fareda":    { gx0: -175, gy0: 55,   cols: 100, rows: 65 },
-  "isola-april":     { gx0: -185, gy0: -115, cols: 70,  rows: 60 },
-  "isola-nicole":    { gx0: -15,  gy0: -175, cols: 80,  rows: 60 },
-  "isola-crassula":  { gx0: 145,  gy0: -40,  cols: 90,  rows: 75 }
+  "isola-charlotte": { gx0: 20,   gy0: 85,   cols: 88, rows: 74 },
+  "isola-fareda":    { gx0: -175, gy0: 55,   cols: 90, rows: 66 },
+  "isola-april":     { gx0: -185, gy0: -115, cols: 80, rows: 64 },
+  "isola-nicole":    { gx0: -15,  gy0: -175, cols: 82, rows: 64 },
+  "isola-crassula":  { gx0: 145,  gy0: -40,  cols: 88, rows: 74 }
   // sesta isola (articolo degli editors): aggiungere qui quando pronta — gx0/gy0 fuori
   // dagli ingombri sopra, cols/rows in linea con le altre.
 };
