@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     houses = sample as any[];
   } else {
     try {
-      const res = await client.getEntries({ content_type: "casa", order: ["fields.number"] as any });
+      const res = await client.getEntries({ content_type: "article", order: ["fields.number"] as any });
       houses = res.items.map(mapHouseEntry).filter((h: any) => h.published);
     } catch (err) {
       console.error("[api/houses] fetch Contentful fallito, uso i dati di esempio:", err);
@@ -21,12 +21,14 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // aggancia il layout di griglia (di proprietà del codice, non del CMS) per slug
+  // aggancia il layout di griglia (di proprietà del codice, non del CMS) per "number", non
+  // per slug: lo slug si autogenera dal titolo in Contentful e cambia se cambia il titolo,
+  // "number" resta stabile.
   const withLayout = houses
     .map((h) => {
-      const layout = ISLAND_LAYOUT[h.slug];
+      const layout = ISLAND_LAYOUT[h.number];
       if (!layout) {
-        console.warn(`[api/houses] nessun layout di griglia per slug "${h.slug}" — isola esclusa dal tabellone. Aggiungila in app/data/islandLayout.ts`);
+        console.warn(`[api/houses] nessun layout di griglia per number ${h.number} (slug "${h.slug}") — isola esclusa dal tabellone. Aggiungila in app/data/islandLayout.ts`);
         return null;
       }
       return { ...h, ...layout };
