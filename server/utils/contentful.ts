@@ -40,3 +40,14 @@ export function mapHouseEntry(entry: Entry<any>) {
     published: f.published !== false
   };
 }
+
+// Mappa l'entry (singola, non una lista) del content type "about" — la pagina /about,
+// pensata per essere modificata direttamente dalla redazione su Contentful, senza
+// bisogno di toccare il codice.
+export function mapAboutEntry(entry: Entry<any>) {
+  const f = entry.fields as any;
+  return {
+    title: f.title || "About",
+    body: f.body || null // documento Rich Text di Contentful, o null se non compilato
+  };
+}

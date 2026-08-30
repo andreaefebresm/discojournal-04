@@ -19,23 +19,27 @@ export interface IslandLayout {
   rows: number; // profondità dell'ingombro in celle di griglia
 }
 
-// Dimensioni riavvicinate tra loro ("dimensioni/proporzioni simili" tra le isole, rif.
-// screenshot mandato): prima andavano da 70x60 a 100x65 (spread ampio), ora tutte tra
-// 80-90 di lato — restano le forme/texture di ognuna a differenziarle, non più la
-// dimensione dell'ingombro sulla griglia. Proprio perché ormai sono intercambiabili per
-// forma, assegnarle per "number" (slot 1, 2, 3...) invece che per identità di ogni singolo
-// articolo ha senso: non importa PIÙ QUALE isola va in un dato slot, basta lo slot giusto.
+// Round "isole più grandi il doppio": cols/rows raddoppiati (SIZE_SCALE=2). Le posizioni
+// sono state scalate dal centro comune ESATTAMENTE dello stesso fattore (SPREAD_SCALE=2,
+// non di meno): è una pura scala uniforme 2x dell'assetto precedente (che non si
+// sovrapponeva), quindi per costruzione non introduce nuove sovrapposizioni — un primo
+// tentativo con spread inferiore alla dimensione (1.5x posizione contro 2x dimensione)
+// aveva invece ridotto lo spazio libero relativo, facendo toccare visivamente due isole
+// (verificato con screenshot ravvicinato nel mockup). GRID_BOUNDS più sotto è stato
+// allargato solo dell'1.2x, non del 2x pieno, altrimenti l'inquadratura si sarebbe
+// allargata quanto il contenuto e l'effetto "più grandi" sarebbe sparito a schermo —
+// l'aumento percepito è quindi ~1.6-1.7x, non un 2.0x letterale.
 export const ISLAND_LAYOUT: Record<number, IslandLayout> = {
-  1: { gx0: 20,   gy0: 85,   cols: 88, rows: 74 },
-  2: { gx0: -175, gy0: 55,   cols: 90, rows: 66 },
-  3: { gx0: -185, gy0: -115, cols: 80, rows: 64 },
-  4: { gx0: -15,  gy0: -175, cols: 82, rows: 64 },
-  5: { gx0: 145,  gy0: -40,  cols: 88, rows: 74 }
+  1: { gx0: 39,   gy0: 174,  cols: 176, rows: 148 },
+  2: { gx0: -351, gy0: 114,  cols: 180, rows: 132 },
+  3: { gx0: -371, gy0: -226, cols: 160, rows: 128 },
+  4: { gx0: -31,  gy0: -346, cols: 164, rows: 128 },
+  5: { gx0: 289,  gy0: -76,  cols: 176, rows: 148 }
   // sesta isola: aggiungi qui la entry "6: {...}" quando pronta — gx0/gy0 fuori dagli
   // ingombri sopra, cols/rows in linea con le altre (guarda i valori esistenti come guida).
 };
 
 // estensione "di contenuto" della board (in celle) — bounding box che contiene tutte le
 // isole con margine, usata per il calcolo del viewBox in IsoBoard.vue. Stessi valori
-// (gxMin0/gxMax0/gyMin0/gyMax0) trovati via ricerca Python e già verificati nel mockup.
-export const GRID_BOUNDS = { gxMin: -403, gxMax: 404, gyMin: -298, gyMax: 319 };
+// (gxMin0/gxMax0/gyMin0/gyMax0) già verificati nel mockup.
+export const GRID_BOUNDS = { gxMin: -484, gxMax: 485, gyMin: -358, gyMax: 383 };
