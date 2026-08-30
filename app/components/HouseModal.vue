@@ -6,7 +6,6 @@
         <button class="modal-close" type="button" aria-label="Chiudi" @click="$emit('close')">✕</button>
       </div>
       <div class="modal-body">
-        <img v-if="house.image" :src="house.image.url" :alt="house.title" />
         <p v-if="house.excerpt" class="modal-excerpt">{{ house.excerpt }}</p>
         <div v-html="bodyHtml"></div>
       </div>
@@ -96,7 +95,6 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 }
 .modal-close:hover{ background:rgba(255,255,255,0.15); }
 .modal-body{ padding:28px 34px 34px; max-width:680px; margin:0 auto; }
-.modal-body img{ width:100%; border-radius:6px; display:block; margin-bottom:20px; filter: drop-shadow(0 10px 16px rgba(15,13,10,0.2)); }
 .modal-excerpt{ font-style:italic; color:var(--ink-soft); }
 /* ---- stili di testo differenziati dentro l'articolo: paragrafo normale, sottotitolo (h3),
    citazione/estratto (blockquote), grassetto/corsivo/link inline — così il corpo non è più
