@@ -85,19 +85,27 @@ function createWalkerLayer() {
   // COHESION_STRENGTH). Restano sempre "a nuoto": testa più opaca (resta "a pelo d'acqua"),
   // corpo più trasparente con un'opacità fissa per omino (si "perdono" nel blu, alcuni più
   // sfumati di altri, come nuotassero a profondità diverse). Mouse-repulsione più decisa.
-  const WALKER_COLOR = '#f4f8ff';
+  // Round 3: da omini bianchi "a nuoto" a piccole figure colorate viste dall'alto, ferme
+  // (riferimento fornito: gente vista dall'alto, testa nera + vestiti colorati, sparsa e
+  // per lo più immobile — non più "nuoto", quasi statue). Palette variata per vestito,
+  // toni pelle per le braccia, testa sempre nera. Movimento quasi azzerato apposta
+  // ("anche più statici" — vedi MAX_SPEED/WANDER_JITTER molto più bassi di prima).
   const NUM_GROUPS = 9;
   const GROUP_SIZE = 15;       // 9x15 = 135 omini — erano 15 in tutto
   const WALKER_SCALE = 13;     // erano 26: la metà, "più piccoli"
 
+  const BODY_COLORS = ['#c1552c', '#e0a72e', '#3b6ea5', '#2f8f7a', '#8b5fa3', '#6b8e4f', '#d97b8f', '#4a5a6a', '#2c7fb8'];
+  const SKIN_TONES = ['#e8b58c', '#c98a5b', '#8d5a3c', '#f2c9a0'];
+  const PANTS_TONES = ['#2e2e2e', '#d8d2c2', '#5b6b73', '#efe9d8'];
+
   const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
   const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
-  const MAX_SPEED = 3.2;       // erano 6.5: "si muovono di meno"
-  const WANDER_JITTER = 0.5;   // erano 1.2: meno scarti casuali di direzione
+  const MAX_SPEED = 0.35;      // eran 3.2: quasi fermi, restano dove capitano
+  const WANDER_JITTER = 0.06;  // eran 0.5: pochissimo scarto casuale di direzione
   // "noise"/respiro autonomo: un'oscillazione morbida indipendente dal movimento vero e
   // proprio, così anche un omino praticamente fermo continua ad avere un filo di vita (si
   // "respira un po' da solo") invece di restare rigido — vedi render().
-  const NOISE_AMPL = 0.55;     // ampiezza in unità di griglia grezze (piccola apposta)
+  const NOISE_AMPL = 0.35;     // ridotta un po': restano più fermi, solo un filo di respiro
 
   const SEP_RADIUS = 4;        // erano 7: si stringono di più (gruppi più fitti)
   const SEP_STRENGTH = 5;
@@ -166,40 +174,64 @@ function createWalkerLayer() {
           group: gi,
           gx: g.gx + Math.cos(a) * r,
           gy: g.gy + Math.sin(a) * r,
-          vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5,
+          vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
           phase: Math.random() * Math.PI * 2,
           wanderT: Math.random() * 10,
-          // opacità fissa per omino, non ricalcolata a ogni frame: dà la sensazione che
-          // alcuni nuotino "più in superficie" (più opachi) e altri "più sotto" (più
-          // sfumati, quasi persi nel blu) — vedi buildPictogram.
-          depthOpacity: 0.45 + Math.random() * 0.55,
+          // opacità fissa per omino: alcuni leggermente più tenui, non più per dare
+          // profondità "sott'acqua" (ora sono fermi in superficie) ma solo un filo di
+          // varietà — vedi buildPictogram.
+          depthOpacity: 0.7 + Math.random() * 0.3,
           // fase/frequenza del "respiro" autonomo, diverse per ognuno così non oscillano
           // tutti insieme in sincrono — vedi NOISE_AMPL e render().
           noiseAX: Math.random() * Math.PI * 2, noiseAY: Math.random() * Math.PI * 2,
           noiseFX: 0.5 + Math.random() * 0.4, noiseFY: 0.4 + Math.random() * 0.5,
+          // aspetto: colore vestito + tono pelle/pantaloni + rotazione e posa fissati alla
+          // nascita (non più orientati dalla direzione di marcia: ora sono fermi, orientati
+          // a caso come nel riferimento fornito).
+          color: BODY_COLORS[(Math.random() * BODY_COLORS.length) | 0],
+          skin: SKIN_TONES[(Math.random() * SKIN_TONES.length) | 0],
+          pants: PANTS_TONES[(Math.random() * PANTS_TONES.length) | 0],
+          rot: Math.random() * 360,
+          armA: -55 - Math.random() * 45,   // angolo braccio sinistro (gradi, variazione di posa)
+          armB: 55 + Math.random() * 45,    // angolo braccio destro
+          armLenA: 2.2 + Math.random() * 1.6,
+          armLenB: 2.2 + Math.random() * 1.6,
+          sitting: Math.random() < 0.22,    // ~1 su 5: posa raccolta/seduta invece che eretta
         });
       }
     });
   }
   initWalkers();
 
-  // ---- pittogramma piatto: testa + busto + gambe/braccia a linea semplice. La testa resta
-  // quasi opaca ("a pelo d'acqua"), il resto del corpo molto più trasparente ("sott'acqua,
-  // che si perde") — opacità di base modulata dalla depthOpacity fissa dell'omino.
-  function buildPictogram(color: string, depthOpacity: number) {
-    const bodyOp = (0.20 + 0.45 * depthOpacity).toFixed(2);
-    const headOp = (0.72 + 0.28 * depthOpacity).toFixed(2);
+  // ---- pittogramma visto dall'alto: vestito colorato (busto), braccia color-pelle a due
+  // angoli fissi (posa), testa nera sempre in cima (l'elemento più "alto"/vicino, come nel
+  // riferimento fornito). Ferme di natura — nessuna animazione di gambe/braccia legata al
+  // movimento: la sola vita residua è il filo di respiro applicato in render() alla
+  // posizione dell'intero gruppo <g>.
+  function buildPictogram(w: any) {
+    const op = (0.75 + 0.25 * w.depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
-    const shadow = el('ellipse', { cx: 0, cy: 5.5, rx: 4.2, ry: 1.6, fill: 'rgba(10,30,35,0.25)' });
-    const legL = el('line', { x1: 0, y1: 0, x2: -3, y2: 5, stroke: color, 'stroke-width': 1.1, 'stroke-linecap': 'round', opacity: bodyOp });
-    const legR = el('line', { x1: 0, y1: 0, x2: 3, y2: 5, stroke: color, 'stroke-width': 1.1, 'stroke-linecap': 'round', opacity: bodyOp });
-    const armL = el('line', { x1: 0, y1: -4, x2: -3, y2: 0, stroke: color, 'stroke-width': 0.9, 'stroke-linecap': 'round', opacity: bodyOp });
-    const armR = el('line', { x1: 0, y1: -4, x2: 3, y2: 0, stroke: color, 'stroke-width': 0.9, 'stroke-linecap': 'round', opacity: bodyOp });
-    const torso = el('line', { x1: 0, y1: -4, x2: 0, y2: 0.5, stroke: color, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: bodyOp });
-    const head = el('circle', { cx: 0, cy: -6, r: 1.5, fill: color, opacity: headOp });
-    const ripple = el('circle', { cx: 0, cy: 0, r: 2, fill: 'none', stroke: color, 'stroke-width': 0.8, opacity: 0 });
-    [shadow, legL, legR, armL, armR, torso, head, ripple].forEach(n => g.appendChild(n));
-    return { g, legL, legR, armL, armR, torso, head, shadow, ripple };
+    const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
+    // gambe: appena visibili sotto il busto, tono pantaloni/scarpe
+    const legL = el('ellipse', { cx: -1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
+    const legR = el('ellipse', { cx: 1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
+    // braccia: due segmenti color-pelle ad angoli/lunghezze diversi per omino (varietà di posa)
+    const armL = el('line', {
+      x1: 0, y1: -1, x2: (Math.cos(w.armA * Math.PI / 180) * w.armLenA).toFixed(2), y2: (Math.sin(w.armA * Math.PI / 180) * w.armLenA - 1).toFixed(2),
+      stroke: w.skin, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: op
+    });
+    const armR = el('line', {
+      x1: 0, y1: -1, x2: (Math.cos(w.armB * Math.PI / 180) * w.armLenB).toFixed(2), y2: (Math.sin(w.armB * Math.PI / 180) * w.armLenB - 1).toFixed(2),
+      stroke: w.skin, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: op
+    });
+    // busto: vestito colorato — più tondo/raccolto se "seduto", più ovale/allungato se eretto
+    const torso = w.sitting
+      ? el('ellipse', { cx: 0, cy: 0, rx: 3.4, ry: 3.2, fill: w.color, opacity: op })
+      : el('ellipse', { cx: 0, cy: -0.4, rx: 2.7, ry: 3.9, fill: w.color, opacity: op });
+    // testa: sempre nera, sempre l'elemento più in cima (renderizzata per ultima)
+    const head = el('circle', { cx: 0, cy: (w.sitting ? -2.6 : -4.2), r: 1.7, fill: '#181818', opacity: op });
+    [shadow, legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
+    return { g, legL, legR, armL, armR, torso, head, shadow };
   }
 
   let mountedSvg: SVGSVGElement | null = null, pointerGrid: { gx: number; gy: number } | null = null;
@@ -223,8 +255,8 @@ function createWalkerLayer() {
     groups!.forEach(g => {
       g.wanderT -= dt;
       if (g.wanderT <= 0) {
-        g.vx += (Math.random() - 0.5) * 0.3;
-        g.vy += (Math.random() - 0.5) * 0.3;
+        g.vx += (Math.random() - 0.5) * 0.05;
+        g.vy += (Math.random() - 0.5) * 0.05;
         g.wanderT = 3 + Math.random() * 4;
       }
       const dxc = cx0 - g.gx, dyc = cy0 - g.gy, dc = Math.hypot(dxc, dyc);
@@ -232,7 +264,7 @@ function createWalkerLayer() {
       landAvoidForce(g, dt, LAND_PUSH_STRENGTH * 0.6);
       g.vx *= 0.96; g.vy *= 0.96;
       const gsp = Math.hypot(g.vx, g.vy);
-      if (gsp > 0.8) { g.vx = g.vx / gsp * 0.8; g.vy = g.vy / gsp * 0.8; }
+      if (gsp > 0.15) { g.vx = g.vx / gsp * 0.15; g.vy = g.vy / gsp * 0.15; }
       g.gx += g.vx * dt; g.gy += g.vy * dt;
       clampOffLand(g, LAND_MARGIN + 10);
     });
@@ -276,7 +308,6 @@ function createWalkerLayer() {
       if (sp > MAX_SPEED) { w.vx = w.vx / sp * MAX_SPEED; w.vy = w.vy / sp * MAX_SPEED; }
 
       w.gx += w.vx * dt; w.gy += w.vy * dt;
-      w.phase += dt * (2.5 + sp * 0.8);
 
       clampOffLand(w, LAND_MARGIN);
     });
@@ -291,27 +322,9 @@ function createWalkerLayer() {
       const nGx = w.gx + Math.sin(simT * w.noiseFX + w.noiseAX) * NOISE_AMPL;
       const nGy = w.gy + Math.cos(simT * w.noiseFY + w.noiseAY) * NOISE_AMPL;
       const p = proj(nGx, nGy);
-      // direzione di marcia proiettata (proj è lineare: si proietta il VETTORE velocità, non
-      // solo il punto, altrimenti l'angolo su schermo sarebbe sbagliato per via dell'asimmetria
-      // degli assi gx/gy)
-      const pv = proj(w.gx + w.vx * 0.2, w.gy + w.vy * 0.2);
-      const heading = Math.atan2(pv.y - p.y, pv.x - p.x) * 180 / Math.PI;
-      const swing = Math.sin(w.phase) * 30;
-
-      const { legL, legR, armL, armR, shadow, ripple, g } = w.dom;
-      // sempre "a nuoto": figura sdraiata (ruotata di 90° in più rispetto alla direzione
-      // di marcia), leggero bob verticale, gambe a battito simmetrico, un'ondina che si
-      // espande sotto — non camminano più sopra le isole.
-      const bob = Math.sin(w.phase * 1.3) * 1.2;
-      g.setAttribute('transform', `translate(${p.x.toFixed(1)},${(p.y + bob).toFixed(1)}) rotate(${(heading + 90).toFixed(1)}) scale(${WALKER_SCALE})`);
-      legL.setAttribute('transform', `rotate(${swing * 0.6})`);
-      legR.setAttribute('transform', `rotate(${-swing * 0.6})`);
-      armL.setAttribute('transform', `rotate(${-10 - swing * 0.3})`);
-      armR.setAttribute('transform', `rotate(${10 + swing * 0.3})`);
-      shadow.setAttribute('opacity', '0');
-      const rr = 2 + ((w.phase * 3) % 6);
-      ripple.setAttribute('r', rr.toFixed(1));
-      ripple.setAttribute('opacity', Math.max(0, 0.4 - rr / 12).toFixed(2));
+      // vista dall'alto, figure ferme: rotazione fissata alla nascita (w.rot), non più
+      // orientata dalla direzione di marcia — sparse a caso come nel riferimento fornito.
+      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${w.rot.toFixed(1)}) scale(${WALKER_SCALE})`);
     });
   }
 
@@ -332,7 +345,7 @@ function createWalkerLayer() {
       mountedSvg = svg;
       const layer = el('g', { class: 'walker-layer' });
       walkers!.forEach(w => {
-        w.dom = buildPictogram(WALKER_COLOR, w.depthOpacity);
+        w.dom = buildPictogram(w);
         layer.appendChild(w.dom.g);
       });
       svg.appendChild(layer);
