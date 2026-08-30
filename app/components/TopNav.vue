@@ -22,16 +22,16 @@
 // la barra ora trasparente sopra il mosaico del mare — porting diretto dal mockup statico.
 // "About" porta ora alla pagina /about (contenuto modificabile su Contentful, content type
 // "about" — vedi server/api/about.get.ts). "Issues" resta non collegato: nessuna pagina/
-// menu dietro ancora, da decidere insieme. Il logo porta alla home. Icone il triplo più
-// grandi di prima (44px -> 150px) più l'etichetta testuale sotto ognuna (prima solo
-// nell'aria-label, non visibile).
+// menu dietro ancora, da decidere insieme. Il logo porta alla home. Icone più grandi di
+// prima (44px -> 80px, dopo un primo tentativo a 150px risultato eccessivo) più
+// l'etichetta testuale sotto ognuna (prima solo nell'aria-label, non visibile).
 </script>
 
 <style scoped>
 /* overlay vero sopra la board (position:absolute, sfondo trasparente): la board occupa
    tutta l'altezza sotto e la barra galleggia sopra, così il mosaico del mare si vede
    anche dietro logo/voci invece di uno sfondo pieno che spinge la board in basso.
-   align-items:flex-start (non più center) perché le icone, molto più alte di una barra di
+   align-items:flex-start (non più center) perché le icone, più alte di una barra di
    64px, devono "scendere" dall'angolo in alto invece di uscire dal viewport verso l'alto
    se centrate in una riga troppo bassa per contenerle. */
 .topbar{
@@ -65,7 +65,7 @@
 }
 .navlinks .navitem:hover, .navlinks .navitem:focus-visible{ transform: translateY(-3px) scale(1.05); }
 .navlinks .navitem img{
-  height:150px; width:auto; display:block;
+  height:80px; width:auto; display:block;
   filter: drop-shadow(0 6px 12px rgba(10,25,35,0.4));
 }
 .navlinks .navitem span{
