@@ -19,22 +19,23 @@ export interface IslandLayout {
   rows: number; // profondità dell'ingombro in celle di griglia
 }
 
-// Round "isole più grandi il doppio": cols/rows raddoppiati (SIZE_SCALE=2). Le posizioni
-// sono state scalate dal centro comune ESATTAMENTE dello stesso fattore (SPREAD_SCALE=2,
-// non di meno): è una pura scala uniforme 2x dell'assetto precedente (che non si
-// sovrapponeva), quindi per costruzione non introduce nuove sovrapposizioni — un primo
-// tentativo con spread inferiore alla dimensione (1.5x posizione contro 2x dimensione)
-// aveva invece ridotto lo spazio libero relativo, facendo toccare visivamente due isole
-// (verificato con screenshot ravvicinato nel mockup). GRID_BOUNDS più sotto è stato
-// allargato solo dell'1.2x, non del 2x pieno, altrimenti l'inquadratura si sarebbe
-// allargata quanto il contenuto e l'effetto "più grandi" sarebbe sparito a schermo —
-// l'aumento percepito è quindi ~1.6-1.7x, non un 2.0x letterale.
+// Round 2 di ingrandimento: "ancora più grandi, va bene se stanno vicine, quasi
+// sovrapposte" — SIZE_SCALE (2.8x le dimensioni originali) supera apposta lo SPREAD_SCALE
+// (2.0x le posizioni originali): a differenza del giro precedente (dove le posizioni
+// dovevano scalare ESATTAMENTE quanto le dimensioni per garantire zero sovrapposizioni),
+// qui bordi che si toccano/si accavallano un po' sono esplicitamente accettati. Due
+// tentativi più aggressivi coprivano troppo "Nicole Furtado" dietro "Crassula Shang"
+// (didascalia illeggibile/tagliata) — verificato via screenshot nel mockup e corretto
+// aumentando lo SPREAD_SCALE finché ogni isola resta riconoscibile e cliccabile per conto
+// suo, pur restando vicine. GRID_BOUNDS più sotto è stato allargato solo del minimo
+// indispensabile per contenere il nuovo ingombro (non quanto le isole), quindi l'aumento
+// di dimensione resta quasi tutto percepibile a schermo.
 export const ISLAND_LAYOUT: Record<number, IslandLayout> = {
-  1: { gx0: 39,   gy0: 174,  cols: 176, rows: 148 },
-  2: { gx0: -351, gy0: 114,  cols: 180, rows: 132 },
-  3: { gx0: -371, gy0: -226, cols: 160, rows: 128 },
-  4: { gx0: -31,  gy0: -346, cols: 164, rows: 128 },
-  5: { gx0: 289,  gy0: -76,  cols: 176, rows: 148 }
+  1: { gx0: 4,    gy0: 144,  cols: 246, rows: 207 },
+  2: { gx0: -387, gy0: 87,   cols: 252, rows: 185 },
+  3: { gx0: -403, gy0: -252, cols: 224, rows: 179 },
+  4: { gx0: -64,  gy0: -372, cols: 230, rows: 179 },
+  5: { gx0: 254,  gy0: -106, cols: 246, rows: 207 }
   // sesta isola: aggiungi qui la entry "6: {...}" quando pronta — gx0/gy0 fuori dagli
   // ingombri sopra, cols/rows in linea con le altre (guarda i valori esistenti come guida).
 };
@@ -42,4 +43,4 @@ export const ISLAND_LAYOUT: Record<number, IslandLayout> = {
 // estensione "di contenuto" della board (in celle) — bounding box che contiene tutte le
 // isole con margine, usata per il calcolo del viewBox in IsoBoard.vue. Stessi valori
 // (gxMin0/gxMax0/gyMin0/gyMax0) già verificati nel mockup.
-export const GRID_BOUNDS = { gxMin: -484, gxMax: 485, gyMin: -358, gyMax: 383 };
+export const GRID_BOUNDS = { gxMin: -484, gxMax: 505, gyMin: -378, gyMax: 383 };

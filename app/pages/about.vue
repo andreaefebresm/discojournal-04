@@ -1,6 +1,5 @@
 <template>
   <article v-if="about">
-    <NuxtLink to="/" class="back">← torna al tabellone</NuxtLink>
     <h1>{{ about.title }}</h1>
     <div class="body" v-html="bodyHtml"></div>
   </article>
@@ -41,8 +40,11 @@ const bodyHtml = computed(() => {
 </script>
 
 <style scoped>
-article{ max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; }
-.back{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-decoration:none; }
+/* stesso stile (font/colori) e stesso sfondo della homepage — nessun "back link"/breadcrumb:
+   con il logo in barra ora cliccabile (torna alla home), non serve un link di rientro
+   dedicato dentro la pagina. Padding-top più ampio di prima: la barra di navigazione ora ha
+   icone molto più grandi (vedi TopNav.vue), serve più spazio per non finirci sotto. */
+article{ max-width: 680px; margin: 0 auto; padding: 220px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; }
 h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
 .body{ line-height:1.7; font-size:16px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; }
 /* :deep() perché il contenuto di .body arriva via v-html: lo scoping normale (basato su un
