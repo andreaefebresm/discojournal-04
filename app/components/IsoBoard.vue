@@ -79,35 +79,71 @@ const ISLAND_HW = 1792 / 2400;
 // repulsione passiva). "Terra" = un'ellisse inscritta nell'ingombro di ogni isola.
 // ================================================================================================
 function createWalkerLayer() {
+  // Un solo gruppo, tutti neri: gli omini restano SEMPRE in acqua (a nuoto), non più
+  // "a terra" sulle isole — vedi landAvoidForce più sotto, che li respinge fuori dal
+  // perimetro di ogni isola invece di farli camminare sopra.
   const GROUPS = [
-    { color: '#e0623f', n: 5 },
-    { color: '#2f8f7a', n: 5 },
-    { color: '#d9a441', n: 5 },
+    { color: '#161412', n: 15 },
   ];
   const REPEL_RADIUS = 16;
   const REPEL_STRENGTH = 220;
   const MAX_SPEED = 5.2;
+  const LAND_PUSH_STRENGTH = 260; // forza con cui vengono respinti se finiscono sopra un'isola
+  const LAND_MARGIN = 22; // margine extra (unità di griglia) oltre il perimetro "visivo" dell'isola
 
-  function isOnLand(gx: number, gy: number) {
-    return props.houses.some(isl => {
+  // spinge un omino fuori dal perimetro ellittico (+margine) di un'isola, in direzione
+  // radiale — usata sia come forza morbida in step() sia come vincolo rigido a fine step.
+  function landAvoidForce(w: any, dt: number) {
+    props.houses.forEach(isl => {
       const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
       const rx = isl.cols / 2 * 0.82, ry = isl.rows / 2 * 0.82;
-      const dx = (gx - cx) / rx, dy = (gy - cy) / ry;
-      return dx * dx + dy * dy <= 1;
+      const dx = (w.gx - cx) / rx, dy = (w.gy - cy) / ry;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < 1) {
+        const rdx = w.gx - cx, rdy = w.gy - cy;
+        const rd = Math.hypot(rdx, rdy) || 0.001;
+        const f = (1 - d2) * LAND_PUSH_STRENGTH * dt;
+        w.vx += rdx / rd * f; w.vy += rdy / rd * f;
+      }
+    });
+  }
+  // vincolo rigido, non solo una forza: garantisce che il CENTRO dell'omino non entri
+  // mai nell'area (isola + margine) — la sola forza poteva essere sopraffatta da altre
+  // forze (mouse, richiamo al centro) e lasciarli per un istante sovrapposti al bordo
+  // della PNG. Margine additivo in unità di griglia (non percentuale): la sagoma del
+  // pittogramma, a schermo, ha un ingombro pressoché costante indipendentemente dalla
+  // dimensione dell'isola.
+  function clampOffLand(w: any) {
+    props.houses.forEach(isl => {
+      const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
+      const rx = isl.cols / 2 * 0.82 + LAND_MARGIN, ry = isl.rows / 2 * 0.82 + LAND_MARGIN;
+      const ex = (w.gx - cx) / rx, ey = (w.gy - cy) / ry;
+      const ed = Math.hypot(ex, ey);
+      if (ed < 1) {
+        const nx = ex / (ed || 0.0001), ny = ey / (ed || 0.0001);
+        w.gx = cx + nx * rx * 1.001;
+        w.gy = cy + ny * ry * 1.001;
+        const vDot = w.vx * nx + w.vy * ny;
+        if (vDot < 0) { w.vx -= vDot * nx; w.vy -= vDot * ny; }
+      }
     });
   }
 
   let walkers: any[] | null = null;
   function initWalkers() {
     walkers = [];
+    // partono già in acqua, sparsi in un anello intorno al centro di tutte le isole —
+    // non più "vicino a una casa": restano sempre a nuoto, mai sulla terra.
+    const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
+    const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
     GROUPS.forEach((g, gi) => {
-      const home = props.houses[gi % props.houses.length];
-      const cx = home.gx0 + home.cols / 2, cy = home.gy0 + home.rows / 2;
       for (let i = 0; i < g.n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 90 + Math.random() * 90;
         walkers!.push({
           group: gi, color: g.color,
-          gx: cx + (Math.random() - 0.5) * home.cols * 0.6,
-          gy: cy + (Math.random() - 0.5) * home.rows * 0.6,
+          gx: cx0 + Math.cos(a) * r,
+          gy: cy0 + Math.sin(a) * r,
           vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2,
           phase: Math.random() * Math.PI * 2,
           wanderT: Math.random() * 10,
@@ -167,6 +203,9 @@ function createWalkerLayer() {
         const dx = w.gx - o.gx, dy = w.gy - o.gy, d = Math.hypot(dx, dy);
         if (d > 0.001 && d < 7) { w.vx += dx / d * 6 * dt; w.vy += dy / d * 6 * dt; }
       });
+      // restano sempre in acqua: se finiscono dentro il perimetro di un'isola vengono
+      // respinti fuori (niente più camminata "a terra" sopra le isole)
+      landAvoidForce(w, dt);
 
       w.vx *= 0.94; w.vy *= 0.94;
       const sp = Math.hypot(w.vx, w.vy);
@@ -174,7 +213,7 @@ function createWalkerLayer() {
 
       w.gx += w.vx * dt; w.gy += w.vy * dt;
       w.phase += dt * (2.5 + sp * 0.8);
-      w.onLand = isOnLand(w.gx, w.gy);
+      clampOffLand(w);
     });
   }
 
@@ -184,29 +223,22 @@ function createWalkerLayer() {
       const p = proj(w.gx, w.gy);
       const pv = proj(w.gx + w.vx * 0.2, w.gy + w.vy * 0.2);
       const heading = Math.atan2(pv.y - p.y, pv.x - p.x) * 180 / Math.PI;
-      const swing = Math.sin(w.phase) * (w.onLand ? 22 : 30);
+      const swing = Math.sin(w.phase) * 30;
 
       const { legL, legR, armL, armR, shadow, ripple, g } = w.dom;
-      if (w.onLand) {
-        g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${heading.toFixed(1)}) scale(26)`);
-        legL.setAttribute('transform', `rotate(${swing})`);
-        legR.setAttribute('transform', `rotate(${-swing})`);
-        armL.setAttribute('transform', `rotate(${-swing * 0.8})`);
-        armR.setAttribute('transform', `rotate(${swing * 0.8})`);
-        shadow.setAttribute('opacity', '1');
-        ripple.setAttribute('opacity', '0');
-      } else {
-        const bob = Math.sin(w.phase * 1.3) * 1.2;
-        g.setAttribute('transform', `translate(${p.x.toFixed(1)},${(p.y + bob).toFixed(1)}) rotate(${(heading + 90).toFixed(1)}) scale(26)`);
-        legL.setAttribute('transform', `rotate(${swing * 0.6})`);
-        legR.setAttribute('transform', `rotate(${-swing * 0.6})`);
-        armL.setAttribute('transform', `rotate(${-10 - swing * 0.3})`);
-        armR.setAttribute('transform', `rotate(${10 + swing * 0.3})`);
-        shadow.setAttribute('opacity', '0');
-        const rr = 2 + ((w.phase * 3) % 6);
-        ripple.setAttribute('r', rr.toFixed(1));
-        ripple.setAttribute('opacity', Math.max(0, 0.5 - rr / 12).toFixed(2));
-      }
+      // sempre "a nuoto": figura sdraiata (ruotata di 90° in più rispetto alla direzione
+      // di marcia), leggero bob verticale, gambe a battito simmetrico, un'ondina che si
+      // espande sotto — non camminano più sopra le isole.
+      const bob = Math.sin(w.phase * 1.3) * 1.2;
+      g.setAttribute('transform', `translate(${p.x.toFixed(1)},${(p.y + bob).toFixed(1)}) rotate(${(heading + 90).toFixed(1)}) scale(26)`);
+      legL.setAttribute('transform', `rotate(${swing * 0.6})`);
+      legR.setAttribute('transform', `rotate(${-swing * 0.6})`);
+      armL.setAttribute('transform', `rotate(${-10 - swing * 0.3})`);
+      armR.setAttribute('transform', `rotate(${10 + swing * 0.3})`);
+      shadow.setAttribute('opacity', '0');
+      const rr = 2 + ((w.phase * 3) % 6);
+      ripple.setAttribute('r', rr.toFixed(1));
+      ripple.setAttribute('opacity', Math.max(0, 0.5 - rr / 12).toFixed(2));
     });
   }
 
@@ -241,6 +273,29 @@ function createWalkerLayer() {
   };
 }
 const WalkerLayer = createWalkerLayer();
+
+// ---- deriva lentissima del mosaico: sposta il punto di ancoraggio del pattern (in unità
+// di griglia, poi proiettato con la stessa skew di proj()) lungo un piccolo giro ellittico,
+// così le tessere sembrano "respirare"/muoversi appena invece di restare perfettamente
+// ferme — persiste indipendentemente da buildBoard() (che ricrea i <pattern> nel DOM a ogni
+// resize, ma con gli stessi id: qui basta ri-cercarli per id a ogni frame).
+const SEA_DRIFT_AMPL = 5;      // unità di griglia — piccolo apposta ("leggermente")
+const SEA_DRIFT_PERIOD_X = 46; // secondi per un giro completo sull'asse x
+const SEA_DRIFT_PERIOD_Y = 63; // periodo diverso sull'asse y, così il moto non si ripete in loop visibile
+let seaDriftT0: number | null = null;
+function tickSeaDrift(tMs: number) {
+  if (seaDriftT0 === null) seaDriftT0 = tMs;
+  const t = (tMs - seaDriftT0) / 1000;
+  const dgx = Math.sin(t / SEA_DRIFT_PERIOD_X * 2 * Math.PI) * SEA_DRIFT_AMPL;
+  const dgy = Math.cos(t / SEA_DRIFT_PERIOD_Y * 2 * Math.PI) * SEA_DRIFT_AMPL;
+  const d = proj(dgx, dgy);
+  const transform = `translate(${d.x.toFixed(2)},${d.y.toFixed(2)}) matrix(${GX_X},${GX_Y},${-GY_X},${GY_Y},0,0)`;
+  ['mosaicDeep', 'mosaicMid', 'mosaicShallow'].forEach(id => {
+    const p = document.getElementById(id);
+    if (p) p.setAttribute('patternTransform', transform);
+  });
+  requestAnimationFrame(tickSeaDrift);
+}
 
 function buildBoard() {
   const svg = svgEl.value;
@@ -308,10 +363,17 @@ function buildBoard() {
       <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="7" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="55" xChannelSelector="R" yChannelSelector="G"/>
     </filter>`;
+  // grana animata: un feOffset tra la turbolenza e il color-matrix, con dx/dy che
+  // "camminano" lentamente via <animate> SMIL nativo (nessun JS extra, nessun ricalcolo
+  // del rumore stesso) — la grana sembra viva/respirare invece di essere ferma.
   const seaGrainSVG = `
-    <filter id="seaGrain" x="-5%" y="-5%" width="110%" height="110%">
+    <filter id="seaGrain" x="-20%" y="-20%" width="140%" height="140%">
       <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="3" stitchTiles="stitch" result="noise"/>
-      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0"/>
+      <feOffset in="noise" dx="0" dy="0" result="noiseMove">
+        <animate attributeName="dx" values="0;13;-8;3;0" dur="14s" repeatCount="indefinite"/>
+        <animate attributeName="dy" values="0;-10;6;-4;0" dur="17s" repeatCount="indefinite"/>
+      </feOffset>
+      <feColorMatrix in="noiseMove" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0"/>
     </filter>`;
   const defs = document.createElementNS(SVGNS, "defs");
   defs.innerHTML = mosaicDeepSVG + mosaicMidSVG + mosaicShallowSVG + handWobbleSVG + seaGrainSVG;
@@ -459,6 +521,7 @@ function buildBoard() {
 
 onMounted(() => {
   buildBoard();
+  requestAnimationFrame(tickSeaDrift);
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
