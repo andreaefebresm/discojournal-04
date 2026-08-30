@@ -2,8 +2,8 @@
 // Resta nel codice apposta — posizione/dimensione dell'isola sulla griglia non deve
 // essere modificabile da un campo di testo libero in Contentful (rischio di sovrapposizioni,
 // coordinate assurde, layout rotto senza nessuna validazione).
-// Chiave = slug dell'articolo/"casa" in Contentful (content type invariato — vedi
-// server/api/houses.get.ts — solo il contenuto è diventato "isole" invece di "case").
+// Chiave = slug dell'articolo/"isola" in Contentful (content type "article" — vedi
+// server/api/houses.get.ts).
 // Se un giorno aggiungi un articolo in CMS senza una entry qui, l'API lo scarta con un warning.
 //
 // Porting diretto dei valori validati nel mockup statico (disco-mockup/index.html,

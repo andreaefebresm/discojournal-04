@@ -19,7 +19,7 @@ export function getContentfulClient() {
   return client;
 }
 
-// Mappa una entry grezza di Contentful (content type "casa") nella forma pulita
+// Mappa una entry grezza di Contentful (content type "article") nella forma pulita
 // che il resto dell'app si aspetta — stessa forma di server/data/houses.sample.json.
 export function mapHouseEntry(entry: Entry<any>) {
   const f = entry.fields as any;
