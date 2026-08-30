@@ -90,8 +90,11 @@ function createWalkerLayer() {
   // movimento, noise", più grandi (non troppo) e più sparsi, ancora a gruppi ma con un
   // vagare più naturale. La repulsione al mouse (REPEL_*) c'era già e resta, ora si vede
   // meglio perché MAX_SPEED non è più quasi-zero.
-  const NUM_GROUPS = 9;
-  const GROUP_SIZE = 15;       // 9x15 = 135 omini — erano 15 in tutto
+  // Round 5: "più omini", anche singoli oltre a quelli a gruppi, gruppi meno serrati (più
+  // separazione al loro interno) — vedi SINGLE_COUNT/SEP_RADIUS più sotto.
+  const NUM_GROUPS = 11;       // eran 9
+  const GROUP_SIZE = 9;        // eran 15: gruppi meno numerosi, meno "ammassati"
+  const SINGLE_COUNT = 45;     // nuovo: omini sciolti, ognuno per conto proprio
   const WALKER_SCALE = 17;     // erano 13: un po' più grandi, non troppo
 
   const BODY_COLORS = ['#c1552c', '#e0a72e', '#3b6ea5', '#2f8f7a', '#8b5fa3', '#6b8e4f', '#d97b8f', '#4a5a6a', '#2c7fb8'];
@@ -107,9 +110,9 @@ function createWalkerLayer() {
   // "respira un po' da solo") invece di restare rigido — vedi render().
   const NOISE_AMPL = 0.6;      // eran 0.35: più "noise" visibile, come richiesto
 
-  const SEP_RADIUS = 5;        // era 4: gruppi un filo meno serrati, più naturali
-  const SEP_STRENGTH = 5;
-  const COHESION_STRENGTH = 0.85; // era 1.1: richiamo verso il gruppo più morbido (più sparsi)
+  const SEP_RADIUS = 8;        // era 5 (poi 4): "meno vicini fra loro" — si respingono da più lontano
+  const SEP_STRENGTH = 6;
+  const COHESION_STRENGTH = 0.6; // era 0.85: richiamo verso il gruppo ancora più morbido
 
   const LAND_PUSH_STRENGTH = 260; // forza con cui vengono respinti se finiscono sopra un'isola
   const LAND_MARGIN = 16;
@@ -163,13 +166,20 @@ function createWalkerLayer() {
     for (let i = 0; i < NUM_GROUPS; i++) {
       const a = Math.random() * Math.PI * 2;
       const r = 90 + Math.random() * 480; // "più sparsi": area di partenza ancora più ampia
-      groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8 });
+      groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8, size: GROUP_SIZE });
+    }
+    // omini singoli: la stessa identica meccanica (wander/land-avoid/repulsione), solo come
+    // "gruppo" di una sola persona — vagano per conto proprio invece che assieme.
+    for (let i = 0; i < SINGLE_COUNT; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 60 + Math.random() * 520;
+      groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8, size: 1 });
     }
     walkers = [];
     groups.forEach((g, gi) => {
-      for (let i = 0; i < GROUP_SIZE; i++) {
+      for (let i = 0; i < g.size; i++) {
         const a = Math.random() * Math.PI * 2;
-        const r = Math.random() * 24;
+        const r = g.size === 1 ? 0 : Math.random() * 36; // gruppi meno serrati: più raggio di nascita
         walkers!.push({
           group: gi,
           gx: g.gx + Math.cos(a) * r,
@@ -212,6 +222,13 @@ function createWalkerLayer() {
     const op = (0.75 + 0.25 * w.depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
     const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
+    // ondine/schiuma: invisibili da fermi, compaiono e crescono con la velocità corrente
+    // (w.curSpeed, impostata in step()) — vedi render(). Sotto le gambe nell'ordine di
+    // disegno, così sembrano intorno ai piedi/nell'acqua smossa, non sopra il vestito.
+    const wake = el('ellipse', { cx: 0, cy: 1.5, rx: 5, ry: 3.2, fill: 'none', stroke: 'rgba(244,248,255,0.75)', 'stroke-width': 1, opacity: 0 });
+    const foamA = el('circle', { cx: -3, cy: 2.2, r: 0.6, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
+    const foamB = el('circle', { cx: 3, cy: 1.8, r: 0.55, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
+    const foamC = el('circle', { cx: 0, cy: 3.6, r: 0.5, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
     // gambe: appena visibili sotto il busto, tono pantaloni/scarpe
     const legL = el('ellipse', { cx: -1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
     const legR = el('ellipse', { cx: 1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
@@ -230,8 +247,8 @@ function createWalkerLayer() {
       : el('ellipse', { cx: 0, cy: -0.4, rx: 2.7, ry: 3.9, fill: w.color, opacity: op });
     // testa: sempre nera, sempre l'elemento più in cima (renderizzata per ultima)
     const head = el('circle', { cx: 0, cy: (w.sitting ? -2.6 : -4.2), r: 1.7, fill: '#181818', opacity: op });
-    [shadow, legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
-    return { g, legL, legR, armL, armR, torso, head, shadow };
+    [shadow, wake, foamA, foamB, foamC, legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
+    return { g, legL, legR, armL, armR, torso, head, shadow, wake, foamA, foamB, foamC };
   }
 
   let mountedSvg: SVGSVGElement | null = null, pointerGrid: { gx: number; gy: number } | null = null;
@@ -306,6 +323,10 @@ function createWalkerLayer() {
       w.vx *= 0.92; w.vy *= 0.92;
       const sp = Math.hypot(w.vx, w.vy);
       if (sp > MAX_SPEED) { w.vx = w.vx / sp * MAX_SPEED; w.vy = w.vy / sp * MAX_SPEED; }
+      // velocità corrente memorizzata (dopo il clamp): usata in render() per far comparire
+      // ondine/schiuma intorno a chi si sta muovendo — vedi buildPictogram/render.
+      w.curSpeed = Math.hypot(w.vx, w.vy);
+      w.phase += dt * (1.5 + w.curSpeed * 2);
 
       w.gx += w.vx * dt; w.gy += w.vy * dt;
 
@@ -327,6 +348,19 @@ function createWalkerLayer() {
       // "vita" senza farli girare su loro stessi in modo innaturale.
       const rot = w.rot + Math.sin(simT * w.noiseFX * 0.6 + w.noiseAY) * 7;
       w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${WALKER_SCALE})`);
+
+      // ondine/schiuma: compaiono e crescono con la velocità corrente, invisibili da fermi.
+      const spF = Math.min(1, (w.curSpeed || 0) / MAX_SPEED);
+      const { wake, foamA, foamB, foamC } = w.dom;
+      wake.setAttribute('opacity', (spF * 0.55).toFixed(2));
+      wake.setAttribute('rx', (4 + spF * 3.5).toFixed(1));
+      wake.setAttribute('ry', (2.6 + spF * 2.2).toFixed(1));
+      const flick = (seed: number) => 0.35 + 0.65 * Math.max(0, Math.sin(w.phase * 2.2 + seed));
+      foamA.setAttribute('opacity', (spF * 0.8 * flick(0)).toFixed(2));
+      foamB.setAttribute('opacity', (spF * 0.8 * flick(2.1)).toFixed(2));
+      foamC.setAttribute('opacity', (spF * 0.8 * flick(4.2)).toFixed(2));
+      foamA.setAttribute('cx', (-3 - spF * 1.1).toFixed(1));
+      foamB.setAttribute('cx', (3 + spF * 1.1).toFixed(1));
     });
   }
 
@@ -385,76 +419,59 @@ function tickSeaDrift(tMs: number) {
   requestAnimationFrame(tickSeaDrift);
 }
 
-// ---- "griglia topografica": piccoli inserti da mappa tecnica/rilievo (anelli con tacche,
-// puntinato, tratteggi, badge esagonali) sparsi in alcuni punti del mare aperto, lontano
-// dalle isole — riferimento fornito dall'utente (grafica blu su bianco stile "mappa/rilievo
-// topografico"). Qui in tono chiaro/bianco per restare nella stessa palette della griglia
-// del mosaico invece di introdurre un nuovo colore. Ricostruita a ogni buildBoard() come le
-// isole (statici, tranne le due classi CSS .topo-pulse/.topo-dash che animano da sole).
-// NB: proj()/GX_X ecc. lavorano in un sistema di unità di griglia enorme (le isole misurano
-// centinaia di unità), quindi le forme locali di questi inserti vanno "gonfiate" con lo
-// stesso trucco di scale(...) usato per gli omini (buildPictogram) — senza, restano
-// sub-pixel e invisibili.
-const TOPO_TINT = 'rgba(244,248,255,0.6)';
-const TOPO_SCALE = 38;
-function topoGroup(gx: number, gy: number, cls: string) {
-  const p = proj(gx, gy);
-  return el('g', { transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) scale(${TOPO_SCALE})`, class: cls });
-}
-function topoMarker(gx: number, gy: number, pulse: boolean) {
-  const g = topoGroup(gx, gy, 'topo-marker');
-  g.appendChild(el('circle', { cx: 0, cy: 0, r: 9, fill: 'none', stroke: TOPO_TINT, 'stroke-width': 1, class: pulse ? 'topo-pulse' : '' }));
-  for (let i = 0; i < 4; i++) {
-    const a = i * Math.PI / 2;
-    g.appendChild(el('line', { x1: (Math.cos(a) * 9).toFixed(1), y1: (Math.sin(a) * 9).toFixed(1), x2: (Math.cos(a) * 12.5).toFixed(1), y2: (Math.sin(a) * 12.5).toFixed(1), stroke: TOPO_TINT, 'stroke-width': 1 }));
-  }
-  g.appendChild(el('circle', { cx: 0, cy: 0, r: 1.6, fill: TOPO_TINT }));
-  g.appendChild(el('rect', { x: 14, y: -2.5, width: 5, height: 5, fill: TOPO_TINT, opacity: 0.85 }));
+// ---- "griglia topografica" v2: corretto un difetto del giro precedente — gli inserti
+// (allora anelli/badge liberi) potevano cadere ovunque, senza rispettare i quadrati della
+// griglia del mosaico. Ora SOLO due motivi (righine diagonali, pallini), e ognuno è
+// confinato dentro UN quadrato preciso della griglia — mai a cavallo del bordo.
+// Il quadrato "griglia" è lo stesso della trama del mosaico: MOSAIC_CELL/MOSAIC_SUB = 24
+// unità di gx/gy — un quadrato va quindi da (gx0,gy0) a (gx0+24,gy0+24), allineato
+// all'origine (0,0) come il mosaico stesso.
+// Qui le forme sono autorate DIRETTAMENTE in coordinate gx/gy (non "unità di disegno" poi
+// scalate): ogni punto passa da proj() singolarmente, così eredita naturalmente la stessa
+// skew isometrica della griglia — è quello che le fa restare "ingrigliate".
+// stroke-width/raggio NON passano per proj(): restano in unità finali dello stesso spazio
+// enorme delle coordinate (le stesse dei bordi-isola, stroke-width 2.2 lì) — un valore
+// "piccolo" sarebbe sub-pixel e invisibile. TOPO_LINE = spessore/raggio "reale" in quello spazio.
+const TOPO_TINT = 'rgba(244,248,255,0.62)';
+const TOPO_LINE = 26;
+function topoCellHatch(gx0: number, gy0: number) {
+  // 3 trattini paralleli lungo la diagonale del quadrato (direzione gx=gy), sfalsati lungo
+  // l'anti-diagonale — restano dentro il quadrato con un margine di sicurezza.
+  const g = el('g', { class: 'topo-hatch' });
+  [-4, 0, 4].forEach(o => {
+    const cx = gx0 + 12 + o, cy = gy0 + 12 - o;
+    const p1 = proj(cx - 7, cy - 7), p2 = proj(cx + 7, cy + 7);
+    g.appendChild(el('line', { x1: p1.x.toFixed(1), y1: p1.y.toFixed(1), x2: p2.x.toFixed(1), y2: p2.y.toFixed(1), stroke: TOPO_TINT, 'stroke-width': TOPO_LINE, 'stroke-linecap': 'round', opacity: 0.5 }));
+  });
   return g;
 }
-function topoStipple(gx: number, gy: number, spread: number, count: number) {
-  const g = topoGroup(gx, gy, 'topo-stipple');
+function topoCellDots(gx0: number, gy0: number) {
+  const g = el('g', { class: 'topo-stipple' });
+  const count = 4 + Math.floor(Math.random() * 3);
   for (let i = 0; i < count; i++) {
-    const a = Math.random() * Math.PI * 2, r = Math.random() * spread;
-    g.appendChild(el('circle', { cx: (Math.cos(a) * r).toFixed(1), cy: (Math.sin(a) * r).toFixed(1), r: (0.5 + Math.random() * 0.7).toFixed(2), fill: TOPO_TINT, opacity: (0.25 + Math.random() * 0.35).toFixed(2) }));
+    const fx = 3 + Math.random() * 18, fy = 3 + Math.random() * 18; // dentro il quadrato, con margine
+    const p = proj(gx0 + fx, gy0 + fy);
+    g.appendChild(el('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: (TOPO_LINE * 0.6 + Math.random() * TOPO_LINE * 0.4).toFixed(1), fill: TOPO_TINT, opacity: (0.38 + Math.random() * 0.32).toFixed(2) }));
   }
   return g;
-}
-function topoHatch(gx: number, gy: number, count: number, len: number, angleDeg: number) {
-  const g = topoGroup(gx, gy, 'topo-hatch');
-  const rad = angleDeg * Math.PI / 180;
-  for (let i = 0; i < count; i++) {
-    const ox = (Math.random() - 0.5) * 30, oy = (Math.random() - 0.5) * 30;
-    const dx = Math.cos(rad) * len, dy = Math.sin(rad) * len * 0.45;
-    g.appendChild(el('line', { x1: (ox - dx / 2).toFixed(1), y1: (oy - dy / 2).toFixed(1), x2: (ox + dx / 2).toFixed(1), y2: (oy + dy / 2).toFixed(1), stroke: TOPO_TINT, 'stroke-width': 1, opacity: 0.35 }));
-  }
-  return g;
-}
-function topoHexBadge(gx: number, gy: number, count: number) {
-  const g = topoGroup(gx, gy, 'topo-hex');
-  for (let i = 0; i < count; i++) {
-    const cx = i * 15 - (count - 1) * 7.5, cy = 0;
-    const pts = [[0, -6], [5.2, -3], [5.2, 3], [0, 6], [-5.2, 3], [-5.2, -3]].map(([x, y]) => `${(cx + x).toFixed(1)},${(cy + y).toFixed(1)}`).join(' ');
-    g.appendChild(el('polygon', { points: pts, fill: 'none', stroke: TOPO_TINT, 'stroke-width': 1, opacity: 0.4 }));
-  }
-  return g;
-}
-// unica forma NON avvolta in topoGroup: collega due punti reali del tabellone, quindi resta
-// in coordinate proj dirette — stroke-width impostato "a mano" alla stessa scala (equivalente
-// a moltiplicare per TOPO_SCALE) perché qui non c'è un wrapper scale().
-function topoDashLine(gx1: number, gy1: number, gx2: number, gy2: number) {
-  const p1 = proj(gx1, gy1), p2 = proj(gx2, gy2);
-  return el('line', { x1: p1.x.toFixed(1), y1: p1.y.toFixed(1), x2: p2.x.toFixed(1), y2: p2.y.toFixed(1), stroke: TOPO_TINT, 'stroke-width': (TOPO_SCALE * 0.9).toFixed(1), opacity: 0.5, class: 'topo-dash' });
 }
 function buildTopoLayer() {
   const g = el('g', { class: 'topo-layer' });
-  g.appendChild(topoMarker(40, -20, true));
-  g.appendChild(topoStipple(-300, -10, 16, 26));
-  g.appendChild(topoHatch(-440, 320, 14, 10, 25));
-  g.appendChild(topoMarker(420, -290, false));
-  g.appendChild(topoDashLine(420, -290, 380, -250));
-  g.appendChild(topoStipple(150, 355, 13, 16));
-  g.appendChild(topoHexBadge(300, 300, 4));
+  // quadrati scelti a mano in acqua aperta, lontano dalle isole, allineati a multipli di 24
+  // così coincidono esattamente con un quadrato vero della griglia mosaico.
+  const cells = [
+    { gx0: 24, gy0: -24, type: 'hatch' },
+    { gx0: -312, gy0: -24, type: 'dots' },
+    { gx0: -456, gy0: 312, type: 'hatch' },
+    { gx0: 408, gy0: -312, type: 'dots' },
+    { gx0: 144, gy0: 336, type: 'hatch' },
+    { gx0: 288, gy0: 288, type: 'dots' },
+    { gx0: 96, gy0: -120, type: 'dots' },
+    { gx0: -150, gy0: 150, type: 'hatch' },
+  ];
+  cells.forEach(c => {
+    g.appendChild(c.type === 'hatch' ? topoCellHatch(c.gx0, c.gy0) : topoCellDots(c.gx0, c.gy0));
+  });
   return g;
 }
 
@@ -720,13 +737,9 @@ watch(() => props.houses, buildBoard, { deep: true });
 .board-wrap{ flex:1 1 auto; min-height:0; display:flex; }
 #board-svg{ display:block; width:100%; height:100%; }
 
-/* inserti "mappa topografica": due sole animazioni, discrete, per non distrarre dal
-   tabellone — un anello che respira piano e una linea tratteggiata che avanza. */
-.topo-marker, .topo-stipple, .topo-hatch, .topo-hex{ pointer-events:none; }
-.topo-pulse{ transform-box: fill-box; transform-origin: center; animation: topoPulse 4.5s ease-in-out infinite; }
-@keyframes topoPulse{ 0%,100%{ opacity:0.45; transform:scale(1); } 50%{ opacity:0.85; transform:scale(1.18); } }
-.topo-dash{ stroke-dasharray: 120 90; animation: topoDash 3.2s linear infinite; }
-@keyframes topoDash{ to{ stroke-dashoffset: -210; } }
+/* inserti "mappa topografica": righine diagonali e pallini, statici e ingrigliati (ognuno
+   dentro un quadrato preciso della griglia del mosaico — vedi buildTopoLayer). */
+.topo-stipple, .topo-hatch{ pointer-events:none; }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
