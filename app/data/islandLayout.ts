@@ -30,12 +30,15 @@ export interface IslandLayout {
 // suo, pur restando vicine. GRID_BOUNDS più sotto è stato allargato solo del minimo
 // indispensabile per contenere il nuovo ingombro (non quanto le isole), quindi l'aumento
 // di dimensione resta quasi tutto percepibile a schermo.
+// Round 3: "isole un po' più piccole" — cols/rows scalate dell'85%, stesso angolo di
+// ancoraggio (gx0/gy0) così le isole restano più o meno dove sono, solo un filo più
+// compatte. GRID_BOUNDS invariato (rimpicciolire non introduce sovrapposizioni).
 export const ISLAND_LAYOUT: Record<number, IslandLayout> = {
-  1: { gx0: 4,    gy0: 144,  cols: 246, rows: 207 },
-  2: { gx0: -387, gy0: 87,   cols: 252, rows: 185 },
-  3: { gx0: -403, gy0: -252, cols: 224, rows: 179 },
-  4: { gx0: -64,  gy0: -372, cols: 230, rows: 179 },
-  5: { gx0: 254,  gy0: -106, cols: 246, rows: 207 }
+  1: { gx0: 4,    gy0: 144,  cols: 209, rows: 176 },
+  2: { gx0: -387, gy0: 87,   cols: 214, rows: 157 },
+  3: { gx0: -403, gy0: -252, cols: 190, rows: 152 },
+  4: { gx0: -64,  gy0: -372, cols: 196, rows: 152 },
+  5: { gx0: 254,  gy0: -106, cols: 209, rows: 176 }
   // sesta isola: aggiungi qui la entry "6: {...}" quando pronta — gx0/gy0 fuori dagli
   // ingombri sopra, cols/rows in linea con le altre (guarda i valori esistenti come guida).
 };

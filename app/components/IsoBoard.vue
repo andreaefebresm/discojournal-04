@@ -85,14 +85,14 @@ function createWalkerLayer() {
   // COHESION_STRENGTH). Restano sempre "a nuoto": testa più opaca (resta "a pelo d'acqua"),
   // corpo più trasparente con un'opacità fissa per omino (si "perdono" nel blu, alcuni più
   // sfumati di altri, come nuotassero a profondità diverse). Mouse-repulsione più decisa.
-  // Round 3: da omini bianchi "a nuoto" a piccole figure colorate viste dall'alto, ferme
-  // (riferimento fornito: gente vista dall'alto, testa nera + vestiti colorati, sparsa e
-  // per lo più immobile — non più "nuoto", quasi statue). Palette variata per vestito,
-  // toni pelle per le braccia, testa sempre nera. Movimento quasi azzerato apposta
-  // ("anche più statici" — vedi MAX_SPEED/WANDER_JITTER molto più bassi di prima).
+  // Round 3: da omini bianchi "a nuoto" a piccole figure colorate viste dall'alto — testa
+  // nera + vestiti colorati. Round 4: erano diventati troppo statici — "un po' di
+  // movimento, noise", più grandi (non troppo) e più sparsi, ancora a gruppi ma con un
+  // vagare più naturale. La repulsione al mouse (REPEL_*) c'era già e resta, ora si vede
+  // meglio perché MAX_SPEED non è più quasi-zero.
   const NUM_GROUPS = 9;
   const GROUP_SIZE = 15;       // 9x15 = 135 omini — erano 15 in tutto
-  const WALKER_SCALE = 13;     // erano 26: la metà, "più piccoli"
+  const WALKER_SCALE = 17;     // erano 13: un po' più grandi, non troppo
 
   const BODY_COLORS = ['#c1552c', '#e0a72e', '#3b6ea5', '#2f8f7a', '#8b5fa3', '#6b8e4f', '#d97b8f', '#4a5a6a', '#2c7fb8'];
   const SKIN_TONES = ['#e8b58c', '#c98a5b', '#8d5a3c', '#f2c9a0'];
@@ -100,16 +100,16 @@ function createWalkerLayer() {
 
   const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
   const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
-  const MAX_SPEED = 0.35;      // eran 3.2: quasi fermi, restano dove capitano
-  const WANDER_JITTER = 0.06;  // eran 0.5: pochissimo scarto casuale di direzione
+  const MAX_SPEED = 1.1;       // eran 0.35 (troppo fermi): vagare lento ma visibile
+  const WANDER_JITTER = 0.22;  // eran 0.06: scarti di direzione un po' più naturali
   // "noise"/respiro autonomo: un'oscillazione morbida indipendente dal movimento vero e
   // proprio, così anche un omino praticamente fermo continua ad avere un filo di vita (si
   // "respira un po' da solo") invece di restare rigido — vedi render().
-  const NOISE_AMPL = 0.35;     // ridotta un po': restano più fermi, solo un filo di respiro
+  const NOISE_AMPL = 0.6;      // eran 0.35: più "noise" visibile, come richiesto
 
-  const SEP_RADIUS = 4;        // erano 7: si stringono di più (gruppi più fitti)
+  const SEP_RADIUS = 5;        // era 4: gruppi un filo meno serrati, più naturali
   const SEP_STRENGTH = 5;
-  const COHESION_STRENGTH = 1.1; // richiamo verso il centro del proprio gruppo
+  const COHESION_STRENGTH = 0.85; // era 1.1: richiamo verso il gruppo più morbido (più sparsi)
 
   const LAND_PUSH_STRENGTH = 260; // forza con cui vengono respinti se finiscono sopra un'isola
   const LAND_MARGIN = 16;
@@ -162,19 +162,19 @@ function createWalkerLayer() {
     groups = [];
     for (let i = 0; i < NUM_GROUPS; i++) {
       const a = Math.random() * Math.PI * 2;
-      const r = 70 + Math.random() * 400;
+      const r = 90 + Math.random() * 480; // "più sparsi": area di partenza ancora più ampia
       groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8 });
     }
     walkers = [];
     groups.forEach((g, gi) => {
       for (let i = 0; i < GROUP_SIZE; i++) {
         const a = Math.random() * Math.PI * 2;
-        const r = Math.random() * 20;
+        const r = Math.random() * 24;
         walkers!.push({
           group: gi,
           gx: g.gx + Math.cos(a) * r,
           gy: g.gy + Math.sin(a) * r,
-          vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+          vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6,
           phase: Math.random() * Math.PI * 2,
           wanderT: Math.random() * 10,
           // opacità fissa per omino: alcuni leggermente più tenui, non più per dare
@@ -248,15 +248,15 @@ function createWalkerLayer() {
     simT += dt;
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
-    const GROUP_BOUND_R = 460; // i centri-gruppo possono vagare MOLTO più lontano di prima
+    const GROUP_BOUND_R = 520; // "più sparsi": i centri-gruppo possono vagare ancora più lontano
 
-    // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole (spostamento
-    // ridotto, come per i singoli omini — "si muovono di meno")
+    // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole — vagare
+    // visibile ma pacato, non un giro veloce.
     groups!.forEach(g => {
       g.wanderT -= dt;
       if (g.wanderT <= 0) {
-        g.vx += (Math.random() - 0.5) * 0.05;
-        g.vy += (Math.random() - 0.5) * 0.05;
+        g.vx += (Math.random() - 0.5) * 0.25;
+        g.vy += (Math.random() - 0.5) * 0.25;
         g.wanderT = 3 + Math.random() * 4;
       }
       const dxc = cx0 - g.gx, dyc = cy0 - g.gy, dc = Math.hypot(dxc, dyc);
@@ -264,7 +264,7 @@ function createWalkerLayer() {
       landAvoidForce(g, dt, LAND_PUSH_STRENGTH * 0.6);
       g.vx *= 0.96; g.vy *= 0.96;
       const gsp = Math.hypot(g.vx, g.vy);
-      if (gsp > 0.15) { g.vx = g.vx / gsp * 0.15; g.vy = g.vy / gsp * 0.15; }
+      if (gsp > 0.5) { g.vx = g.vx / gsp * 0.5; g.vy = g.vy / gsp * 0.5; }
       g.gx += g.vx * dt; g.gy += g.vy * dt;
       clampOffLand(g, LAND_MARGIN + 10);
     });
@@ -322,9 +322,11 @@ function createWalkerLayer() {
       const nGx = w.gx + Math.sin(simT * w.noiseFX + w.noiseAX) * NOISE_AMPL;
       const nGy = w.gy + Math.cos(simT * w.noiseFY + w.noiseAY) * NOISE_AMPL;
       const p = proj(nGx, nGy);
-      // vista dall'alto, figure ferme: rotazione fissata alla nascita (w.rot), non più
-      // orientata dalla direzione di marcia — sparse a caso come nel riferimento fornito.
-      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${w.rot.toFixed(1)}) scale(${WALKER_SCALE})`);
+      // vista dall'alto: rotazione di base fissata alla nascita (w.rot) più un piccolo
+      // ondeggiare autonomo (stesso principio del respiro, ma sull'angolo) — un po' di
+      // "vita" senza farli girare su loro stessi in modo innaturale.
+      const rot = w.rot + Math.sin(simT * w.noiseFX * 0.6 + w.noiseAY) * 7;
+      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${WALKER_SCALE})`);
     });
   }
 
@@ -381,6 +383,79 @@ function tickSeaDrift(tMs: number) {
     if (p) p.setAttribute('patternTransform', transform);
   });
   requestAnimationFrame(tickSeaDrift);
+}
+
+// ---- "griglia topografica": piccoli inserti da mappa tecnica/rilievo (anelli con tacche,
+// puntinato, tratteggi, badge esagonali) sparsi in alcuni punti del mare aperto, lontano
+// dalle isole — riferimento fornito dall'utente (grafica blu su bianco stile "mappa/rilievo
+// topografico"). Qui in tono chiaro/bianco per restare nella stessa palette della griglia
+// del mosaico invece di introdurre un nuovo colore. Ricostruita a ogni buildBoard() come le
+// isole (statici, tranne le due classi CSS .topo-pulse/.topo-dash che animano da sole).
+// NB: proj()/GX_X ecc. lavorano in un sistema di unità di griglia enorme (le isole misurano
+// centinaia di unità), quindi le forme locali di questi inserti vanno "gonfiate" con lo
+// stesso trucco di scale(...) usato per gli omini (buildPictogram) — senza, restano
+// sub-pixel e invisibili.
+const TOPO_TINT = 'rgba(244,248,255,0.6)';
+const TOPO_SCALE = 38;
+function topoGroup(gx: number, gy: number, cls: string) {
+  const p = proj(gx, gy);
+  return el('g', { transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) scale(${TOPO_SCALE})`, class: cls });
+}
+function topoMarker(gx: number, gy: number, pulse: boolean) {
+  const g = topoGroup(gx, gy, 'topo-marker');
+  g.appendChild(el('circle', { cx: 0, cy: 0, r: 9, fill: 'none', stroke: TOPO_TINT, 'stroke-width': 1, class: pulse ? 'topo-pulse' : '' }));
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2;
+    g.appendChild(el('line', { x1: (Math.cos(a) * 9).toFixed(1), y1: (Math.sin(a) * 9).toFixed(1), x2: (Math.cos(a) * 12.5).toFixed(1), y2: (Math.sin(a) * 12.5).toFixed(1), stroke: TOPO_TINT, 'stroke-width': 1 }));
+  }
+  g.appendChild(el('circle', { cx: 0, cy: 0, r: 1.6, fill: TOPO_TINT }));
+  g.appendChild(el('rect', { x: 14, y: -2.5, width: 5, height: 5, fill: TOPO_TINT, opacity: 0.85 }));
+  return g;
+}
+function topoStipple(gx: number, gy: number, spread: number, count: number) {
+  const g = topoGroup(gx, gy, 'topo-stipple');
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2, r = Math.random() * spread;
+    g.appendChild(el('circle', { cx: (Math.cos(a) * r).toFixed(1), cy: (Math.sin(a) * r).toFixed(1), r: (0.5 + Math.random() * 0.7).toFixed(2), fill: TOPO_TINT, opacity: (0.25 + Math.random() * 0.35).toFixed(2) }));
+  }
+  return g;
+}
+function topoHatch(gx: number, gy: number, count: number, len: number, angleDeg: number) {
+  const g = topoGroup(gx, gy, 'topo-hatch');
+  const rad = angleDeg * Math.PI / 180;
+  for (let i = 0; i < count; i++) {
+    const ox = (Math.random() - 0.5) * 30, oy = (Math.random() - 0.5) * 30;
+    const dx = Math.cos(rad) * len, dy = Math.sin(rad) * len * 0.45;
+    g.appendChild(el('line', { x1: (ox - dx / 2).toFixed(1), y1: (oy - dy / 2).toFixed(1), x2: (ox + dx / 2).toFixed(1), y2: (oy + dy / 2).toFixed(1), stroke: TOPO_TINT, 'stroke-width': 1, opacity: 0.35 }));
+  }
+  return g;
+}
+function topoHexBadge(gx: number, gy: number, count: number) {
+  const g = topoGroup(gx, gy, 'topo-hex');
+  for (let i = 0; i < count; i++) {
+    const cx = i * 15 - (count - 1) * 7.5, cy = 0;
+    const pts = [[0, -6], [5.2, -3], [5.2, 3], [0, 6], [-5.2, 3], [-5.2, -3]].map(([x, y]) => `${(cx + x).toFixed(1)},${(cy + y).toFixed(1)}`).join(' ');
+    g.appendChild(el('polygon', { points: pts, fill: 'none', stroke: TOPO_TINT, 'stroke-width': 1, opacity: 0.4 }));
+  }
+  return g;
+}
+// unica forma NON avvolta in topoGroup: collega due punti reali del tabellone, quindi resta
+// in coordinate proj dirette — stroke-width impostato "a mano" alla stessa scala (equivalente
+// a moltiplicare per TOPO_SCALE) perché qui non c'è un wrapper scale().
+function topoDashLine(gx1: number, gy1: number, gx2: number, gy2: number) {
+  const p1 = proj(gx1, gy1), p2 = proj(gx2, gy2);
+  return el('line', { x1: p1.x.toFixed(1), y1: p1.y.toFixed(1), x2: p2.x.toFixed(1), y2: p2.y.toFixed(1), stroke: TOPO_TINT, 'stroke-width': (TOPO_SCALE * 0.9).toFixed(1), opacity: 0.5, class: 'topo-dash' });
+}
+function buildTopoLayer() {
+  const g = el('g', { class: 'topo-layer' });
+  g.appendChild(topoMarker(40, -20, true));
+  g.appendChild(topoStipple(-300, -10, 16, 26));
+  g.appendChild(topoHatch(-440, 320, 14, 10, 25));
+  g.appendChild(topoMarker(420, -290, false));
+  g.appendChild(topoDashLine(420, -290, 380, -250));
+  g.appendChild(topoStipple(150, 355, 13, 16));
+  g.appendChild(topoHexBadge(300, 300, 4));
+  return g;
 }
 
 function buildBoard() {
@@ -558,6 +633,10 @@ function buildBoard() {
   grainRect.setAttribute('style', 'mix-blend-mode:multiply;pointer-events:none;');
   svg.appendChild(grainRect);
 
+  // ---- inserti da "mappa topografica" in alcuni punti del mare aperto — texture/decorazione,
+  // sotto isole e omini.
+  svg.appendChild(buildTopoLayer());
+
   // ---- omini piatti: montati QUI, PRIMA delle isole, così nell'ordine di disegno SVG (chi
   // viene dopo sta sopra) le isole finiscono sempre sopra agli omini — mai il contrario. Il
   // DOM va ricreato a ogni rebuild, ma la simulazione (posizioni/velocità) persiste.
@@ -640,6 +719,14 @@ watch(() => props.houses, buildBoard, { deep: true });
 .board-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
 .board-wrap{ flex:1 1 auto; min-height:0; display:flex; }
 #board-svg{ display:block; width:100%; height:100%; }
+
+/* inserti "mappa topografica": due sole animazioni, discrete, per non distrarre dal
+   tabellone — un anello che respira piano e una linea tratteggiata che avanza. */
+.topo-marker, .topo-stipple, .topo-hatch, .topo-hex{ pointer-events:none; }
+.topo-pulse{ transform-box: fill-box; transform-origin: center; animation: topoPulse 4.5s ease-in-out infinite; }
+@keyframes topoPulse{ 0%,100%{ opacity:0.45; transform:scale(1); } 50%{ opacity:0.85; transform:scale(1.18); } }
+.topo-dash{ stroke-dasharray: 120 90; animation: topoDash 3.2s linear infinite; }
+@keyframes topoDash{ to{ stroke-dashoffset: -210; } }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
