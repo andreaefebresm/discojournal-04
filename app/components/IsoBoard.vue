@@ -92,7 +92,12 @@ function createWalkerLayer() {
 
   const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
   const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
-  const MAX_SPEED = 6.5;
+  const MAX_SPEED = 3.2;       // erano 6.5: "si muovono di meno"
+  const WANDER_JITTER = 0.5;   // erano 1.2: meno scarti casuali di direzione
+  // "noise"/respiro autonomo: un'oscillazione morbida indipendente dal movimento vero e
+  // proprio, così anche un omino praticamente fermo continua ad avere un filo di vita (si
+  // "respira un po' da solo") invece di restare rigido — vedi render().
+  const NOISE_AMPL = 0.55;     // ampiezza in unità di griglia grezze (piccola apposta)
 
   const SEP_RADIUS = 4;        // erano 7: si stringono di più (gruppi più fitti)
   const SEP_STRENGTH = 5;
@@ -140,6 +145,7 @@ function createWalkerLayer() {
   // che invece ricreano tutto il DOM svg da zero via svg.innerHTML='')
   let groups: any[] | null = null; // centri dei gruppi: vagano lentamente per tutto il mare
   let walkers: any[] | null = null;
+  let simT = 0; // tempo continuo, indipendente dalla velocità di ognuno — alimenta il "respiro"
   function initWalkers() {
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
@@ -167,6 +173,10 @@ function createWalkerLayer() {
           // alcuni nuotino "più in superficie" (più opachi) e altri "più sotto" (più
           // sfumati, quasi persi nel blu) — vedi buildPictogram.
           depthOpacity: 0.45 + Math.random() * 0.55,
+          // fase/frequenza del "respiro" autonomo, diverse per ognuno così non oscillano
+          // tutti insieme in sincrono — vedi NOISE_AMPL e render().
+          noiseAX: Math.random() * Math.PI * 2, noiseAY: Math.random() * Math.PI * 2,
+          noiseFX: 0.5 + Math.random() * 0.4, noiseFY: 0.4 + Math.random() * 0.5,
         });
       }
     });
@@ -181,12 +191,12 @@ function createWalkerLayer() {
     const headOp = (0.72 + 0.28 * depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
     const shadow = el('ellipse', { cx: 0, cy: 5.5, rx: 4.2, ry: 1.6, fill: 'rgba(10,30,35,0.25)' });
-    const legL = el('line', { x1: 0, y1: 0, x2: -3, y2: 5, stroke: color, 'stroke-width': 1.6, 'stroke-linecap': 'round', opacity: bodyOp });
-    const legR = el('line', { x1: 0, y1: 0, x2: 3, y2: 5, stroke: color, 'stroke-width': 1.6, 'stroke-linecap': 'round', opacity: bodyOp });
-    const armL = el('line', { x1: 0, y1: -4, x2: -3, y2: 0, stroke: color, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: bodyOp });
-    const armR = el('line', { x1: 0, y1: -4, x2: 3, y2: 0, stroke: color, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: bodyOp });
-    const torso = el('line', { x1: 0, y1: -4, x2: 0, y2: 0.5, stroke: color, 'stroke-width': 2.2, 'stroke-linecap': 'round', opacity: bodyOp });
-    const head = el('circle', { cx: 0, cy: -6, r: 2.1, fill: color, opacity: headOp });
+    const legL = el('line', { x1: 0, y1: 0, x2: -3, y2: 5, stroke: color, 'stroke-width': 1.1, 'stroke-linecap': 'round', opacity: bodyOp });
+    const legR = el('line', { x1: 0, y1: 0, x2: 3, y2: 5, stroke: color, 'stroke-width': 1.1, 'stroke-linecap': 'round', opacity: bodyOp });
+    const armL = el('line', { x1: 0, y1: -4, x2: -3, y2: 0, stroke: color, 'stroke-width': 0.9, 'stroke-linecap': 'round', opacity: bodyOp });
+    const armR = el('line', { x1: 0, y1: -4, x2: 3, y2: 0, stroke: color, 'stroke-width': 0.9, 'stroke-linecap': 'round', opacity: bodyOp });
+    const torso = el('line', { x1: 0, y1: -4, x2: 0, y2: 0.5, stroke: color, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: bodyOp });
+    const head = el('circle', { cx: 0, cy: -6, r: 1.5, fill: color, opacity: headOp });
     const ripple = el('circle', { cx: 0, cy: 0, r: 2, fill: 'none', stroke: color, 'stroke-width': 0.8, opacity: 0 });
     [shadow, legL, legR, armL, armR, torso, head, ripple].forEach(n => g.appendChild(n));
     return { g, legL, legR, armL, armR, torso, head, shadow, ripple };
@@ -203,16 +213,18 @@ function createWalkerLayer() {
   }
 
   function step(dt: number) {
+    simT += dt;
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
     const GROUP_BOUND_R = 460; // i centri-gruppo possono vagare MOLTO più lontano di prima
 
-    // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole
+    // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole (spostamento
+    // ridotto, come per i singoli omini — "si muovono di meno")
     groups!.forEach(g => {
       g.wanderT -= dt;
       if (g.wanderT <= 0) {
-        g.vx += (Math.random() - 0.5) * 0.6;
-        g.vy += (Math.random() - 0.5) * 0.6;
+        g.vx += (Math.random() - 0.5) * 0.3;
+        g.vy += (Math.random() - 0.5) * 0.3;
         g.wanderT = 3 + Math.random() * 4;
       }
       const dxc = cx0 - g.gx, dyc = cy0 - g.gy, dc = Math.hypot(dxc, dyc);
@@ -220,7 +232,7 @@ function createWalkerLayer() {
       landAvoidForce(g, dt, LAND_PUSH_STRENGTH * 0.6);
       g.vx *= 0.96; g.vy *= 0.96;
       const gsp = Math.hypot(g.vx, g.vy);
-      if (gsp > 1.4) { g.vx = g.vx / gsp * 1.4; g.vy = g.vy / gsp * 1.4; }
+      if (gsp > 0.8) { g.vx = g.vx / gsp * 0.8; g.vy = g.vy / gsp * 0.8; }
       g.gx += g.vx * dt; g.gy += g.vy * dt;
       clampOffLand(g, LAND_MARGIN + 10);
     });
@@ -228,8 +240,8 @@ function createWalkerLayer() {
     walkers!.forEach(w => {
       w.wanderT -= dt;
       if (w.wanderT <= 0) {
-        w.vx += (Math.random() - 0.5) * 1.2;
-        w.vy += (Math.random() - 0.5) * 1.2;
+        w.vx += (Math.random() - 0.5) * WANDER_JITTER;
+        w.vy += (Math.random() - 0.5) * WANDER_JITTER;
         w.wanderT = 1 + Math.random() * 1.5;
       }
       // richiamo verso il centro del proprio gruppo — è questo che tiene i gruppi "fitti"
@@ -273,7 +285,12 @@ function createWalkerLayer() {
   function render() {
     walkers!.forEach(w => {
       if (!w.dom) return;
-      const p = proj(w.gx, w.gy);
+      // "respiro" autonomo: un piccolo scarto di posizione che oscilla per conto suo nel
+      // tempo (simT, non legato alla velocità reale dell'omino), fase/frequenza diverse per
+      // ognuno — anche un omino praticamente fermo continua ad avere un filo di vita.
+      const nGx = w.gx + Math.sin(simT * w.noiseFX + w.noiseAX) * NOISE_AMPL;
+      const nGy = w.gy + Math.cos(simT * w.noiseFY + w.noiseAY) * NOISE_AMPL;
+      const p = proj(nGx, nGy);
       // direzione di marcia proiettata (proj è lineare: si proietta il VETTORE velocità, non
       // solo il punto, altrimenti l'angolo su schermo sarebbe sbagliato per via dell'asimmetria
       // degli assi gx/gy)
@@ -394,9 +411,6 @@ function buildBoard() {
   const CAP_FONT = 14 / pxPerUnit;
   const CAP_STROKE = 3 / pxPerUnit;
   const CAP_GAP = 16 / pxPerUnit;
-  const BADGE_R = 15 / pxPerUnit;
-  const BADGE_FONT = 13 / pxPerUnit;
-  const BADGE_STROKE = 1.2 / pxPerUnit;
 
   // ---- MARE "piscina": mosaico di tessere allineato via patternTransform (proj() è
   // lineare, quindi si esprime come matrix() SVG — vedi disco-mockup/index.html per la
@@ -531,6 +545,11 @@ function buildBoard() {
   grainRect.setAttribute('style', 'mix-blend-mode:multiply;pointer-events:none;');
   svg.appendChild(grainRect);
 
+  // ---- omini piatti: montati QUI, PRIMA delle isole, così nell'ordine di disegno SVG (chi
+  // viene dopo sta sopra) le isole finiscono sempre sopra agli omini — mai il contrario. Il
+  // DOM va ricreato a ogni rebuild, ma la simulazione (posizioni/velocità) persiste.
+  WalkerLayer.mount(svg);
+
   // ---- isole: PNG con terreno/nature/edifici già inclusi, appoggiate direttamente sul mare.
   props.houses.forEach(hs => {
     const corners = plotCorners(hs);
@@ -569,17 +588,12 @@ function buildBoard() {
     const wrap = el('g', {});
     wrap.appendChild(fo);
 
-    // badge numero, sopra l'isola — dimensioni calcolate dalla scala px/unità (vedi sopra),
-    // non più fisse: a questa scala un raggio "13" fisso era sub-pixel e invisibile.
-    const badgeCx = bx0 + bw * 0.08, badgeCy = by0 + bh * 0.10;
-    wrap.appendChild(el('circle', { cx: badgeCx, cy: badgeCy, r: BADGE_R.toFixed(1), fill: '#2c2620', stroke: 'rgba(255,255,255,0.35)', 'stroke-width': BADGE_STROKE.toFixed(2) }));
-    const bt = el('text', { x: badgeCx, y: (badgeCy + BADGE_FONT * 0.36).toFixed(1), 'text-anchor': 'middle', class: 'house-badge' });
-    bt.setAttribute('style', `font-size:${BADGE_FONT.toFixed(1)}px`);
-    bt.textContent = '0' + hs.number;
-    wrap.appendChild(bt);
+    // il badge numerico ("01","02"...) sopra l'isola è stato tolto: non si vogliono più
+    // numeri visibili in homepage. Il numero resta comunque nell'aria-label del bottone
+    // (accessibilità) e nel CMS, semplicemente non si disegna più sull'SVG.
 
     // didascalia, sotto l'isola: SOLO il titolo, sempre visibile (prima appariva solo in
-    // hover, e con "Isola 0N —" davanti — il numero resta comunque nel badge sopra l'isola).
+    // hover, e con "Isola 0N —" davanti).
     const cap = el('text', { x: bx0 + bw / 2, y: (by1 + CAP_GAP).toFixed(1), 'text-anchor': 'middle', class: 'house-cap' });
     cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px; stroke-width:${CAP_STROKE.toFixed(2)}px`);
     cap.textContent = hs.title;
@@ -593,9 +607,6 @@ function buildBoard() {
     btn.addEventListener('blur', () => { wrap.classList.remove('house-hover'); });
     btn.addEventListener('click', () => { emit('select', hs); });
   });
-
-  // ---- omini piatti: il DOM va ricreato a ogni rebuild, ma la simulazione persiste.
-  WalkerLayer.mount(svg);
 }
 
 onMounted(() => {
