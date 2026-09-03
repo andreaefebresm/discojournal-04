@@ -4,10 +4,10 @@
       <img class="logo" src="/assets/logo-placeholder.png" alt="logo (placeholder)" />
     </NuxtLink>
     <div class="navlinks">
-      <button type="button" class="navitem" aria-label="Issues — numeri precedenti" @click.prevent>
+      <NuxtLink to="/issues" class="navitem" aria-label="Issues — numeri precedenti">
         <img src="/assets/nav/nav-issues-buoys.png" alt="Issues — numeri precedenti" />
         <span>Issues</span>
-      </button>
+      </NuxtLink>
       <NuxtLink to="/about" class="navitem" aria-label="About">
         <img src="/assets/nav/nav-about-ladder.png" alt="About" />
         <span>About</span>
@@ -20,11 +20,13 @@
 // "Issues" e "About" non sono più testo ma piccoli render fotorealistici (stack di
 // salvagenti = numeri precedenti, scaletta piscina = About), coerenti con la board e con
 // la barra ora trasparente sopra il mosaico del mare — porting diretto dal mockup statico.
-// "About" porta ora alla pagina /about (contenuto modificabile su Contentful, content type
-// "about" — vedi server/api/about.get.ts). "Issues" resta non collegato: nessuna pagina/
-// menu dietro ancora, da decidere insieme. Il logo porta alla home. Icone più grandi di
-// prima (44px -> 80px, dopo un primo tentativo a 150px risultato eccessivo) più
-// l'etichetta testuale sotto ognuna (prima solo nell'aria-label, non visibile).
+// "About" porta alla pagina /about (contenuto modificabile su Contentful, content type
+// "about" — vedi server/api/about.get.ts). "Issues" ora porta alla pagina /issues, stesso
+// meccanismo (content type "issue" su Contentful, vedi server/api/issues.get.ts) — prima
+// era un bottone non collegato (segnalato da April: "Issues hyperlink doesn't work"). Il
+// logo porta alla home. Icone più grandi di prima (44px -> 80px, dopo un primo tentativo a
+// 150px risultato eccessivo) più l'etichetta testuale sotto ognuna (prima solo
+// nell'aria-label, non visibile).
 </script>
 
 <style scoped>
