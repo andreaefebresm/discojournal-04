@@ -631,15 +631,23 @@ function buildSeaObjectsLayer() {
 // pensata per dare una taglia finale comparabile al placeholder che sostituisce (corpo
 // rx:2.2 → diametro ~4.4).
 // stesso discorso di SEA_SCALE sopra: 34 dava creature larghe 4-7px a schermo, invisibili.
-const ANIMAL_SCALE = 150;
+// 150 restava ancora "quasi non si vedono" (richiesta esplicita) — ritarato più su.
+const ANIMAL_SCALE = 260;
 const ANIMAL_IMG_W = 4.6;
 const ANIMAL_IMG_ASPECT = 600 / 327;
+// raddoppiati (ogni specie compare 2 volte, posizioni diverse) e più sparsi in acqua aperta
+// — richiesto esplicitamente ("fanne il doppio... falli più sparsi").
 const ANIMALS: Array<{ gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }> = [
   { gx: 150, gy: 380, rot: 0, size: 1.0, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
   { gx: -230, gy: 400, rot: 0, size: 0.85, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
   { gx: 330, gy: -260, rot: 0, size: 1.1, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
   { gx: -330, gy: 20, rot: 0, size: 0.75, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
   { gx: -260, gy: -420, rot: 0, size: 0.95, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
+  { gx: 480, gy: 70, rot: 0, size: 1.05, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
+  { gx: -480, gy: -190, rot: 0, size: 0.9, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
+  { gx: 160, gy: 480, rot: 0, size: 1.15, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
+  { gx: 480, gy: 360, rot: 0, size: 0.8, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
+  { gx: -140, gy: -480, rot: 0, size: 1.0, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
 ];
 function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }) {
   const p = proj(a.gx, a.gy);
@@ -721,16 +729,23 @@ function buildBoard() {
   // lineare, quindi si esprime come matrix() SVG — vedi disco-mockup/index.html per la
   // spiegazione completa), tre profondità (deep/mid/shallow) a gradini/spigoli intorno a
   // ogni isola, wobble "dipinto a mano" e grana per toglierlo dalla resa piatta/digitale.
-  const MOSAIC_CELL = 96;
+  // griglia più grande in mobile ("la griglia la voglio più grande" — richiesta esplicita):
+  // stesso mosaico, ma tessere più larghe così si legge meglio su schermo piccolo.
+  const isMobileView = wrapRect.width > 0 && wrapRect.width <= 760;
+  const MOSAIC_CELL = isMobileView ? 176 : 96;
   const MOSAIC_SUB = 4;
   const projMatrix = `matrix(${GX_X},${GX_Y},${-GY_X},${GY_Y},0,0)`;
+  // stroke-width irregolare per tassello (non più un valore fisso): righe di grout un po'
+  // più larghe, un po' più sottili — "onde più irregolari come larghezza di stroke",
+  // richiesto esplicitamente. Seed fisso per rendering, ricalcolato solo ad ogni rebuild.
   function mosaicTilesSVG(sub: number, baseFill: string, accentFill: string, accentCells: number[][], groutColor: string, groutW: number) {
     const s = MOSAIC_CELL / sub;
     let out = '';
     for (let i = 0; i < sub; i++) for (let j = 0; j < sub; j++) {
       const isAccent = accentCells.some(([ai, aj]) => ai === i && aj === j);
+      const w = (groutW + (Math.random() - 0.5) * groutW * 0.85).toFixed(2);
       out += `<rect x="${(i * s).toFixed(2)}" y="${(j * s).toFixed(2)}" width="${s.toFixed(2)}" height="${s.toFixed(2)}"
-        fill="${isAccent ? accentFill : baseFill}" stroke="${groutColor}" stroke-width="${groutW}"/>`;
+        fill="${isAccent ? accentFill : baseFill}" stroke="${groutColor}" stroke-width="${w}"/>`;
     }
     return out;
   }
@@ -757,7 +772,7 @@ function buildBoard() {
       <feDisplacementMap in="SourceGraphic" in2="handN" scale="55" xChannelSelector="R" yChannelSelector="G" result="handWobbled"/>
       <feTurbulence type="fractalNoise" baseFrequency="0.020" numOctaves="2" seed="21" result="waveN"/>
       <feDisplacementMap in="handWobbled" in2="waveN" xChannelSelector="R" yChannelSelector="G">
-        <animate attributeName="scale" values="6;24;6" dur="10s" repeatCount="indefinite"/>
+        <animate attributeName="scale" values="10;46;10" dur="7s" repeatCount="indefinite"/>
       </feDisplacementMap>
     </filter>`;
   // grana animata: un feOffset tra la turbolenza e il color-matrix, con dx/dy che
@@ -836,6 +851,12 @@ function buildBoard() {
   }
   const seaG = el('g', { filter: 'url(#seaWobble)' });
   seaG.appendChild(el('rect', { x: vbX.toFixed(1), y: vbY.toFixed(1), width: vbW.toFixed(1), height: vbH.toFixed(1), fill: 'url(#mosaicDeep)' }));
+  // gli "scalini" chiari intorno a ogni isola grande vanno in un gruppo a parte
+  // (.main-island-steps), nascosto in mobile insieme alle isole stesse (.main-island): senza
+  // l'isola sopra, questi resterebbero macchie chiare senza motivo — "devono stare sotto
+  // alle isole, non a caso", richiesto esplicitamente.
+  const islandStepsG = el('g', { class: 'main-island-steps' });
+  seaG.appendChild(islandStepsG);
   props.houses.forEach(isl => {
     const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
     [
@@ -846,8 +867,8 @@ function buildBoard() {
       const pts = steppedBlobPoints(cx, cy, rx, ry, STEP_CELL);
       if (!pts) return;
       const ptsStr = pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
-      seaG.appendChild(el('polygon', { points: ptsStr, fill: `url(#${step.pattern})` }));
-      seaG.appendChild(el('polygon', { points: ptsStr, fill: 'none', stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 2.2 }));
+      islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: `url(#${step.pattern})` }));
+      islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: 'none', stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 2.2 }));
     });
   });
   seaG.setAttribute('opacity', '0.8');
@@ -1038,6 +1059,7 @@ watch(() => props.houses, buildBoard, { deep: true });
     pointer-events:none;
   }
   .main-island{ display:none; }
+  .main-island-steps{ display:none; }
   .board-root{ min-height: 100%; }
   /* padding-top più ampio: la topbar è "position:absolute" sopra tutto (icone 80px +
      etichetta + padding verticale ≈ 130px) e prima la prima isola ci finiva sotto. */
