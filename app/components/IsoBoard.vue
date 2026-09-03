@@ -558,6 +558,58 @@ function topoCellDots(gx0: number, gy0: number) {
 // number:4, sullo stesso principio — vedi git history per il codice del pittogramma se
 // serve come riferimento nel frattempo.)
 
+// ---- mini-isole/terreni decorativi sparsi in acqua aperta: NON cliccabili, desaturati
+// (grayscale via CSS — vedi classe .mini-island), scelti a mano per stare lontani dalle
+// 5 isole principali e dai quadrati della griglia topografica. Per ora sono placeholder
+// disegnati in SVG (nessuno strumento di generazione immagini disponibile in questa
+// sessione); quando arrivano le immagini vere generate con Gemini (vedi prompt fornito
+// ad Andrea), ogni entry qui sotto va convertita in un <img>/foreignObject come le isole
+// principali, mantenendo la stessa posizione (gx/gy) e la stessa classe .mini-island per
+// il filtro di desaturazione — il resto del codice non cambia.
+const MINI_ISLAND_SCALE = 130;
+const MINI_ISLANDS = [
+  { gx: -300, gy: 300, variant: 0, size: 1.0, rot: 12 },
+  { gx: 380, gy: 250, variant: 2, size: 0.85, rot: -30 },
+  { gx: -230, gy: -330, variant: 1, size: 1.1, rot: 60 },
+  { gx: 350, gy: -320, variant: 3, size: 0.9, rot: -8 },
+  { gx: -60, gy: -40, variant: 2, size: 0.8, rot: 200 },
+  { gx: 100, gy: -20, variant: 0, size: 0.7, rot: 95 },
+  { gx: -450, gy: -50, variant: 1, size: 1.15, rot: 140 },
+  { gx: -100, gy: 360, variant: 3, size: 0.95, rot: -60 },
+  { gx: 200, gy: -360, variant: 0, size: 0.8, rot: 20 },
+  { gx: -250, gy: -20, variant: 2, size: 1.0, rot: -110 },
+];
+// 4 "varianti" di sagoma (poligono irregolare con raggio diverso per vertice), per un
+// po' di diversità di forma senza dover disegnare 10 pittogrammi a mano.
+const MINI_VARIANTS = [
+  [3.6, 4.4, 3.2, 4.8, 3.4, 4.0],
+  [4.6, 3.0, 4.2, 3.6, 4.8, 2.8],
+  [3.0, 3.4, 4.6, 3.8, 3.2, 4.4],
+  [4.0, 4.2, 3.6, 3.0, 4.4, 3.8],
+];
+const MINI_FILLS = ['#b9ae95', '#9aa39c', '#8a9a7c', '#c9d6d6'];
+function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: number; rot: number }) {
+  const p = proj(mi.gx, mi.gy);
+  const scale = MINI_ISLAND_SCALE * mi.size;
+  const g = el('g', { class: 'mini-island', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${mi.rot}) scale(${scale.toFixed(1)})` });
+  const shadow = el('ellipse', { cx: 0, cy: 1.6, rx: 5, ry: 2.6, fill: 'rgba(10,20,15,0.22)' });
+  const radii = MINI_VARIANTS[mi.variant % MINI_VARIANTS.length];
+  const pts = radii.map((r, i) => {
+    const a = (Math.PI * 2 * i) / radii.length;
+    return `${(Math.cos(a) * r).toFixed(2)},${(Math.sin(a) * r * 0.62).toFixed(2)}`; // *0.62: appiattita, vista dall'alto in leggera prospettiva
+  }).join(' ');
+  const land = el('polygon', { points: pts, fill: MINI_FILLS[mi.variant % MINI_FILLS.length], stroke: 'rgba(30,30,25,0.35)', 'stroke-width': 0.15 });
+  const speck1 = el('circle', { cx: -radii[0] * 0.3, cy: 0.3, r: 0.5, fill: 'rgba(40,35,30,0.28)' });
+  const speck2 = el('circle', { cx: radii[2] * 0.35, cy: -0.4, r: 0.4, fill: 'rgba(40,35,30,0.22)' });
+  [shadow, land, speck1, speck2].forEach(n => g.appendChild(n));
+  return g;
+}
+function buildMiniIslandsLayer() {
+  const g = el('g', { class: 'mini-island-layer' });
+  MINI_ISLANDS.forEach(mi => g.appendChild(buildMiniIsland(mi)));
+  return g;
+}
+
 function buildTopoLayer() {
   const g = el('g', { class: 'topo-layer' });
   // quadrati scelti a mano in acqua aperta, lontano dalle isole, allineati a multipli di 24
@@ -762,6 +814,11 @@ function buildBoard() {
   // DOM va ricreato a ogni rebuild, ma la simulazione (posizioni/velocità) persiste.
   WalkerLayer.mount(svg);
 
+  // ---- mini-isole/terreni decorativi, non cliccabili — vedi buildMiniIslandsLayer più
+  // sopra. Dopo gli omini (così coprono chi vi passa sotto) ma prima delle isole vere,
+  // che restano sempre l'elemento più in primo piano della board.
+  svg.appendChild(buildMiniIslandsLayer());
+
   // ---- isole: PNG con terreno/nature/edifici già inclusi, appoggiate direttamente sul mare.
   props.houses.forEach(hs => {
     const corners = plotCorners(hs);
@@ -843,6 +900,12 @@ watch(() => props.houses, buildBoard, { deep: true });
 /* inserti "mappa topografica": righine diagonali e pallini, statici e ingrigliati (ognuno
    dentro un quadrato preciso della griglia del mosaico — vedi buildTopoLayer). */
 .topo-stipple, .topo-hatch{ pointer-events:none; }
+
+/* mini-isole/terreni decorativi: desaturati e un filo spenti, così restano sullo sfondo e
+   non competono con le 5 isole vere (a colori, interattive, sempre più in primo piano).
+   pointer-events:none — per sicurezza, anche se non hanno già nessun bottone/handler: non
+   devono MAI intercettare hover/click destinati al mare/agli omini sotto. */
+.mini-island{ filter:grayscale(1) brightness(0.94) contrast(1.05); opacity:0.82; pointer-events:none; }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
