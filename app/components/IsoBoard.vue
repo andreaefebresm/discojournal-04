@@ -500,17 +500,21 @@ function topoCellDots(gx0: number, gy0: number) {
 // principali, mantenendo la stessa posizione (gx/gy) e la stessa classe .mini-island per
 // il filtro di desaturazione — il resto del codice non cambia.
 const MINI_ISLAND_SCALE = 130;
-const MINI_ISLANDS = [
-  { gx: -300, gy: 300, variant: 0, size: 1.0, rot: 12 },
-  { gx: 380, gy: 250, variant: 2, size: 0.85, rot: -30 },
-  { gx: -230, gy: -330, variant: 1, size: 1.1, rot: 60 },
-  { gx: 350, gy: -320, variant: 3, size: 0.9, rot: -8 },
-  { gx: -60, gy: -40, variant: 2, size: 0.8, rot: 200 },
-  { gx: 100, gy: -20, variant: 0, size: 0.7, rot: 95 },
-  { gx: -450, gy: -50, variant: 1, size: 1.15, rot: 140 },
-  { gx: -100, gy: 360, variant: 3, size: 0.95, rot: -60 },
-  { gx: 200, gy: -360, variant: 0, size: 0.8, rot: 20 },
-  { gx: -250, gy: -20, variant: 2, size: 1.0, rot: -110 },
+// tutte e 10 hanno ora l'immagine vera generata da Andrea con Gemini — niente più
+// placeholder procedurali. rot:0 su tutte (foto fotorealistiche, non poligoni astratti:
+// ruotarle sembra sbagliato, come da richiesta). imgAspect solo dove diverso dal formato
+// standard ~700x382 usato dalla maggior parte delle immagini.
+const MINI_ISLANDS: Array<{ gx: number; gy: number; variant: number; size: number; rot: number; img?: string; imgAspect?: number }> = [
+  { gx: -300, gy: 300, variant: 0, size: 1.0, rot: 0, img: '/assets/mini-islands/reef.png' },
+  { gx: 380, gy: 250, variant: 2, size: 0.85, rot: 0, img: '/assets/mini-islands/volcano.png', imgAspect: 700 / 284 },
+  { gx: -230, gy: -330, variant: 1, size: 1.1, rot: 0, img: '/assets/mini-islands/driftwood.png' },
+  { gx: 250, gy: -330, variant: 3, size: 0.9, rot: 0, img: '/assets/mini-islands/saltflat.png' },
+  { gx: -60, gy: -40, variant: 2, size: 0.8, rot: 0, img: '/assets/mini-islands/mossyboulders.png' },
+  { gx: 100, gy: -20, variant: 0, size: 0.7, rot: 0, img: '/assets/mini-islands/mesa.png' },
+  { gx: -450, gy: -50, variant: 1, size: 1.15, rot: 0, img: '/assets/mini-islands/tidepools.png' },
+  { gx: -100, gy: 360, variant: 3, size: 0.95, rot: 0, img: '/assets/mini-islands/mangrove.png' },
+  { gx: 200, gy: -360, variant: 0, size: 0.8, rot: 0, img: '/assets/mini-islands/dunegrass.png', imgAspect: 1 },
+  { gx: -250, gy: -20, variant: 2, size: 1.0, rot: 0, img: '/assets/mini-islands/icefloe.png' },
 ];
 // 4 "varianti" di sagoma (poligono irregolare con raggio diverso per vertice), per un
 // po' di diversità di forma senza dover disegnare 10 pittogrammi a mano.
@@ -521,10 +525,25 @@ const MINI_VARIANTS = [
   [4.0, 4.2, 3.6, 3.0, 4.4, 3.8],
 ];
 const MINI_FILLS = ['#b9ae95', '#9aa39c', '#8a9a7c', '#c9d6d6'];
-function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: number; rot: number }) {
+// aspect ratio (larghezza/altezza) delle immagini generate con Gemini per le mini-isole:
+// stessa inquadratura per tutte (~700x382), quindi un solo valore va bene per tutte.
+const MINI_IMG_ASPECT = 700 / 382;
+function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: number; rot: number; img?: string; imgAspect?: number }) {
   const p = proj(mi.gx, mi.gy);
   const scale = MINI_ISLAND_SCALE * mi.size;
   const g = el('g', { class: 'mini-island', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${mi.rot}) scale(${scale.toFixed(1)})` });
+  if (mi.img) {
+    // immagine vera (fotorealistica, stesso stile delle isole): niente poligono/speckle
+    // procedurali — solo l'immagine, centrata sull'ancora, più un'ombra leggera sotto le
+    // radici. Larghezza fissa in unità locali (11: un po' più grande del placeholder che
+    // sostituiva), altezza derivata dall'aspect ratio della sorgente (imgAspect per-entry
+    // se diverso dal formato standard).
+    const W = 11, H = W / (mi.imgAspect || MINI_IMG_ASPECT);
+    const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: W * 0.26, ry: W * 0.08, fill: 'rgba(10,20,15,0.22)' });
+    const img = el('image', { href: mi.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
+    [shadow, img].forEach(n => g.appendChild(n));
+    return g;
+  }
   const shadow = el('ellipse', { cx: 0, cy: 1.6, rx: 5, ry: 2.6, fill: 'rgba(10,20,15,0.22)' });
   const radii = MINI_VARIANTS[mi.variant % MINI_VARIANTS.length];
   const pts = radii.map((r, i) => {
