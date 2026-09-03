@@ -552,41 +552,11 @@ function topoCellDots(gx0: number, gy0: number) {
   }
   return g;
 }
-// ---- entità IA su roccia lavica, sull'isola di Nicole (number:4) — su richiesta di
-// Nicole ("lava rock nanoparticle AI entity in post-apocalyptic Hawai'i"), scelto lo
-// stile "monolite con occhi che brillano" (rif. HAL 9000/2001: Odissea nello spazio)
-// invece del robot solitario stile Wall-E. È un pittogramma piatto (stesso registro
-// degli omini/creature marine), non un render fotorealistico come l'isola sotto —
-// nessuno strumento di generazione immagini è disponibile in questa sessione — quindi
-// resta volutamente un piccolo "accento"/marker sulla scena, non fuso nella fotografia.
-// Coordinate in unità locali piccole come i pittogrammi omino/balena: la vera scala
-// arriva dal wrapper scale(ROBOT_SCALE) nel transform, non da questi numeri.
-const ROBOT_SCALE = 105;
-function buildNicoleRobot(isl: { gx0: number; gy0: number; cols: number; rows: number }) {
-  const cx = isl.gx0 + isl.cols * 0.60, cy = isl.gy0 + isl.rows * 0.34; // in disparte, non al centro dell'isola
-  const p = proj(cx, cy);
-  const g = el('g', { class: 'nicole-robot', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) scale(${ROBOT_SCALE})` });
-  const shadow = el('ellipse', { cx: 0, cy: 1.1, rx: 2.6, ry: 1.3, fill: 'rgba(10,8,6,0.4)' });
-  // alone ambrato a terra: presenza "attiva" anche a distanza, pulsa piano
-  const groundGlow = el('ellipse', { cx: 0, cy: 0.6, rx: 3.4, ry: 1.8, fill: 'rgba(255,130,40,0.16)', class: 'hal-ground-glow' });
-  // monolite: blocco di roccia lavica scura, leggermente rastremato verso l'alto
-  const body = el('path', {
-    d: 'M -1.55,-7.6 L 1.55,-7.6 L 2.15,0 L -2.15,0 Z',
-    fill: '#18140f', stroke: 'rgba(60,30,15,0.6)', 'stroke-width': 0.12
-  });
-  // spigolo in luce, sul lato sinistro — dà volume senza serve un gradiente
-  const edge = el('path', { d: 'M -1.55,-7.6 L -0.5,-7.6 L -0.9,0 L -2.15,0 Z', fill: 'rgba(90,60,40,0.35)' });
-  // crepe/venature di lava (linee sottili, non simmetriche)
-  const crack1 = el('polyline', { points: '-0.6,-6.4 0.1,-4.6 -0.3,-2.4 0.4,-0.6', fill: 'none', stroke: 'rgba(210,90,35,0.55)', 'stroke-width': 0.14, 'stroke-linecap': 'round' });
-  const crack2 = el('polyline', { points: '1.1,-5.2 0.6,-3.1 1.2,-1.2', fill: 'none', stroke: 'rgba(210,90,35,0.4)', 'stroke-width': 0.1, 'stroke-linecap': 'round' });
-  // occhi: due luci ambra, con un alone che pulsa (via CSS) — l'unico elemento "vivo"
-  const eyeGlowL = el('circle', { cx: -0.62, cy: -6.35, r: 0.85, fill: 'rgba(255,150,55,0.4)', class: 'hal-eye-glow' });
-  const eyeGlowR = el('circle', { cx: 0.62, cy: -6.35, r: 0.85, fill: 'rgba(255,150,55,0.4)', class: 'hal-eye-glow' });
-  const eyeL = el('circle', { cx: -0.62, cy: -6.35, r: 0.3, fill: '#ffb454' });
-  const eyeR = el('circle', { cx: 0.62, cy: -6.35, r: 0.3, fill: '#ffb454' });
-  [shadow, groundGlow, body, edge, crack1, crack2, eyeGlowL, eyeGlowR, eyeL, eyeR].forEach(n => g.appendChild(n));
-  return g;
-}
+// (l'entità IA "monolite" sull'isola di Nicole — pittogramma SVG placeholder in stile
+// HAL 9000 — è stata rimossa: Nicole ha generato un'immagine vera con Gemini, che
+// prenderà il suo posto. Quando arriva il file, va inserito qui come overlay sull'isola
+// number:4, sullo stesso principio — vedi git history per il codice del pittogramma se
+// serve come riferimento nel frattempo.)
 
 function buildTopoLayer() {
   const g = el('g', { class: 'topo-layer' });
@@ -849,11 +819,6 @@ function buildBoard() {
     btn.addEventListener('blur', () => { wrap.classList.remove('house-hover'); });
     btn.addEventListener('click', () => { emit('select', hs); });
   });
-
-  // ---- entità IA su roccia lavica sull'isola di Nicole — disegnata DOPO le isole così
-  // sta sopra la PNG (non sotto, come omini/topo). Vedi buildNicoleRobot più sopra.
-  const nicoleIsl = props.houses.find(h => h.number === 4);
-  if (nicoleIsl) svg.appendChild(buildNicoleRobot(nicoleIsl));
 }
 
 onMounted(() => {
@@ -895,16 +860,6 @@ watch(() => props.houses, buildBoard, { deep: true });
   50% { transform: translateY(-4%); }
 }
 
-/* entità IA sull'isola di Nicole: occhi/alone che pulsano piano, l'unico segno di vita
-   del monolite — vedi buildNicoleRobot(). Due velocità leggermente diverse (occhi più
-   rapidi dell'alone a terra) così non è un lampeggio meccanico/perfettamente in fase. */
-@keyframes halEyePulse{ 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
-@keyframes halGroundPulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
-.hal-eye-glow{ animation: halEyePulse 2.6s ease-in-out infinite; transform-origin: center; }
-.hal-ground-glow{ animation: halGroundPulse 4.1s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce){
-  .hal-eye-glow, .hal-ground-glow{ animation: none !important; opacity: .8; }
-}
 .house-frame img{
   width:100%; display:block;
   /* isole = PNG a sfondo trasparente: ombra portata che segue la sagoma, le fa leggere
