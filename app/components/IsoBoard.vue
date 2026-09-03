@@ -456,35 +456,6 @@ function tickSeaDrift(tMs: number) {
 // Il quadrato "griglia" è lo stesso della trama del mosaico: MOSAIC_CELL/MOSAIC_SUB = 24
 // unità di gx/gy — un quadrato va quindi da (gx0,gy0) a (gx0+24,gy0+24), allineato
 // all'origine (0,0) come il mosaico stesso.
-// Qui le forme sono autorate DIRETTAMENTE in coordinate gx/gy (non "unità di disegno" poi
-// scalate): ogni punto passa da proj() singolarmente, così eredita naturalmente la stessa
-// skew isometrica della griglia — è quello che le fa restare "ingrigliate".
-// stroke-width/raggio NON passano per proj(): restano in unità finali dello stesso spazio
-// enorme delle coordinate (le stesse dei bordi-isola, stroke-width 2.2 lì) — un valore
-// "piccolo" sarebbe sub-pixel e invisibile. TOPO_LINE = spessore/raggio "reale" in quello spazio.
-const TOPO_TINT = 'rgba(244,248,255,0.62)';
-const TOPO_LINE = 26;
-function topoCellHatch(gx0: number, gy0: number) {
-  // 3 trattini paralleli lungo la diagonale del quadrato (direzione gx=gy), sfalsati lungo
-  // l'anti-diagonale — restano dentro il quadrato con un margine di sicurezza.
-  const g = el('g', { class: 'topo-hatch' });
-  [-4, 0, 4].forEach(o => {
-    const cx = gx0 + 12 + o, cy = gy0 + 12 - o;
-    const p1 = proj(cx - 7, cy - 7), p2 = proj(cx + 7, cy + 7);
-    g.appendChild(el('line', { x1: p1.x.toFixed(1), y1: p1.y.toFixed(1), x2: p2.x.toFixed(1), y2: p2.y.toFixed(1), stroke: TOPO_TINT, 'stroke-width': TOPO_LINE, 'stroke-linecap': 'round', opacity: 0.5 }));
-  });
-  return g;
-}
-function topoCellDots(gx0: number, gy0: number) {
-  const g = el('g', { class: 'topo-stipple' });
-  const count = 4 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < count; i++) {
-    const fx = 3 + Math.random() * 18, fy = 3 + Math.random() * 18; // dentro il quadrato, con margine
-    const p = proj(gx0 + fx, gy0 + fy);
-    g.appendChild(el('circle', { cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: (TOPO_LINE * 0.6 + Math.random() * TOPO_LINE * 0.4).toFixed(1), fill: TOPO_TINT, opacity: (0.38 + Math.random() * 0.32).toFixed(2) }));
-  }
-  return g;
-}
 // (l'entità IA "monolite" sull'isola di Nicole — pittogramma SVG placeholder in stile
 // HAL 9000 — è stata rimossa: Nicole ha generato un'immagine vera con Gemini, che
 // prenderà il suo posto. Quando arriva il file, va inserito qui come overlay sull'isola
@@ -699,26 +670,6 @@ function buildAnimalsLayer() {
   return g;
 }
 
-function buildTopoLayer() {
-  const g = el('g', { class: 'topo-layer' });
-  // quadrati scelti a mano in acqua aperta, lontano dalle isole, allineati a multipli di 24
-  // così coincidono esattamente con un quadrato vero della griglia mosaico.
-  const cells = [
-    { gx0: 24, gy0: -24, type: 'hatch' },
-    { gx0: -312, gy0: -24, type: 'dots' },
-    { gx0: -456, gy0: 312, type: 'hatch' },
-    { gx0: 408, gy0: -312, type: 'dots' },
-    { gx0: 144, gy0: 336, type: 'hatch' },
-    { gx0: 288, gy0: 288, type: 'dots' },
-    { gx0: 96, gy0: -120, type: 'dots' },
-    { gx0: -150, gy0: 150, type: 'hatch' },
-  ];
-  cells.forEach(c => {
-    g.appendChild(c.type === 'hatch' ? topoCellHatch(c.gx0, c.gy0) : topoCellDots(c.gx0, c.gy0));
-  });
-  return g;
-}
-
 function buildBoard() {
   const svg = svgEl.value;
   if (!svg || !props.houses.length) return;
@@ -780,20 +731,29 @@ function buildBoard() {
   }
   const mosaicDeepSVG = `
     <pattern id="mosaicDeep" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
-      ${mosaicTilesSVG(MOSAIC_SUB, '#3d5a8f', '#32507f', [[0, 2], [3, 1]], '#e9f0fb', 1.1)}
+      ${mosaicTilesSVG(MOSAIC_SUB, '#3d5a8f', '#32507f', [[0, 2], [3, 1]], '#eef4fc', 2.6)}
     </pattern>`;
   const mosaicMidSVG = `
     <pattern id="mosaicMid" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
-      ${mosaicTilesSVG(MOSAIC_SUB, '#5c7ab8', '#4a6aa8', [[2, 1], [0, 3]], '#eef3fc', 1.1)}
+      ${mosaicTilesSVG(MOSAIC_SUB, '#5c7ab8', '#4a6aa8', [[2, 1], [0, 3]], '#f2f6fd', 2.6)}
     </pattern>`;
   const mosaicShallowSVG = `
     <pattern id="mosaicShallow" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
-      ${mosaicTilesSVG(MOSAIC_SUB, '#8aa3d6', '#7590c6', [[1, 0], [2, 3]], '#f3f7fd', 1.1)}
+      ${mosaicTilesSVG(MOSAIC_SUB, '#8aa3d6', '#7590c6', [[1, 0], [2, 3]], '#f7faff', 2.6)}
     </pattern>`;
+  // "seaWobble": due passaggi in catena. Il primo (statico, seed fisso) è il vecchio wobble
+  // "dipinto a mano" — le linee non sono perfettamente rette come il resto della board (case/
+  // isole restano nitide, solo il mare "respira"). Il secondo è un'onda vera: stessa idea ma
+  // con la "scale" di feDisplacementMap animata via <animate> SMIL (nessun JS extra), così la
+  // griglia/grout più spessa ondeggia lentamente avanti e indietro come schiuma sull'acqua.
   const handWobbleSVG = `
-    <filter id="handWobble" x="-10%" y="-10%" width="120%" height="120%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="55" xChannelSelector="R" yChannelSelector="G"/>
+    <filter id="seaWobble" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="7" result="handN"/>
+      <feDisplacementMap in="SourceGraphic" in2="handN" scale="55" xChannelSelector="R" yChannelSelector="G" result="handWobbled"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.020" numOctaves="2" seed="21" result="waveN"/>
+      <feDisplacementMap in="handWobbled" in2="waveN" xChannelSelector="R" yChannelSelector="G">
+        <animate attributeName="scale" values="6;24;6" dur="10s" repeatCount="indefinite"/>
+      </feDisplacementMap>
     </filter>`;
   // grana animata: un feOffset tra la turbolenza e il color-matrix, con dx/dy che
   // "camminano" lentamente via <animate> SMIL nativo (nessun JS extra, nessun ricalcolo
@@ -869,7 +829,7 @@ function buildBoard() {
     if (!path) return null;
     return path.map(([gx, gy]) => proj(gx, gy));
   }
-  const seaG = el('g', { filter: 'url(#handWobble)' });
+  const seaG = el('g', { filter: 'url(#seaWobble)' });
   seaG.appendChild(el('rect', { x: vbX.toFixed(1), y: vbY.toFixed(1), width: vbW.toFixed(1), height: vbH.toFixed(1), fill: 'url(#mosaicDeep)' }));
   props.houses.forEach(isl => {
     const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
@@ -893,10 +853,6 @@ function buildBoard() {
   });
   grainRect.setAttribute('style', 'mix-blend-mode:multiply;pointer-events:none;');
   svg.appendChild(grainRect);
-
-  // ---- inserti da "mappa topografica" in alcuni punti del mare aperto — texture/decorazione,
-  // sotto isole e omini.
-  svg.appendChild(buildTopoLayer());
 
   // ---- omini piatti: montati QUI, PRIMA delle isole, così nell'ordine di disegno SVG (chi
   // viene dopo sta sopra) le isole finiscono sempre sopra agli omini — mai il contrario. Il
@@ -951,7 +907,7 @@ function buildBoard() {
     btn.appendChild(frame);
     fo.appendChild(btn);
 
-    const wrap = el('g', {});
+    const wrap = el('g', { class: 'main-island' });
     wrap.appendChild(fo);
 
     // il badge numerico ("01","02"...) sopra l'isola è stato tolto: non si vogliono più
@@ -993,10 +949,6 @@ watch(() => props.houses, buildBoard, { deep: true });
 .board-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
 .board-wrap{ flex:1 1 auto; min-height:0; display:flex; }
 #board-svg{ display:block; width:100%; height:100%; }
-
-/* inserti "mappa topografica": righine diagonali e pallini, statici e ingrigliati (ognuno
-   dentro un quadrato preciso della griglia del mosaico — vedi buildTopoLayer). */
-.topo-stipple, .topo-hatch{ pointer-events:none; }
 
 /* mini-isole/terreni decorativi: desaturati e un filo spenti, così restano sullo sfondo e
    non competono con le 5 isole vere (a colori, interattive, sempre più in primo piano).
@@ -1068,16 +1020,25 @@ watch(() => props.houses, buildBoard, { deep: true });
 
 .list{ display:none; }
 @media (max-width: 760px){
-  .board-wrap{ display:none; }
-  /* sfondo "acqua" anche in vista mobile: prima la board isometrica (unica cosa che
-     dipingeva un tono marino) spariva del tutto sotto i 760px e restava il beige piatto
-     della pagina — qui basta un gradiente statico, coerente con la palette del mosaico. */
-  .board-root{ background: linear-gradient(180deg, #dce8e6 0%, #c7dbdb 45%, #b7d0d2 100%); min-height: 100%; }
+  /* la board isometrica resta MONTATA anche in mobile — non più "display:none" — così lo
+     sfondo è la stessa scena del desktop (mare/mosaico, mini-isole, animali, oggetti,
+     omini) invece di un gradiente piatto. Diventa uno sfondo fisso a schermo intero,
+     dietro la lista di card: non cliccabile/non scrollabile di suo, e le isole grandi
+     cliccabili (.main-island) restano nascoste perché la navigazione qui è la lista, non i
+     tap sulla mappa. */
+  .board-wrap{
+    display:flex;
+    position:fixed; inset:0;
+    z-index:0;
+    pointer-events:none;
+  }
+  .main-island{ display:none; }
+  .board-root{ min-height: 100%; }
   /* padding-top più ampio: la topbar è "position:absolute" sopra tutto (icone 80px +
      etichetta + padding verticale ≈ 130px) e prima la prima isola ci finiva sotto. */
-  .list{ display:flex; flex-direction:column; align-items:center; gap:28px; padding:150px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
+  .list{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:28px; padding:150px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
   .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
   .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }
-  .list .caption{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; }
+  .list .caption{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; text-shadow: 0 1px 3px rgba(255,255,255,.9), 0 1px 3px rgba(255,255,255,.9); }
 }
 </style>
