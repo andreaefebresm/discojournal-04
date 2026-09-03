@@ -1,0 +1,23 @@
+[
+  {
+    "number": 3,
+    "title": "Issue 03",
+    "excerpt": "Segnaposto: mini descrizione del numero 03, da sostituire con il testo reale da Contentful.",
+    "image": null,
+    "url": null
+  },
+  {
+    "number": 2,
+    "title": "Issue 02",
+    "excerpt": "Segnaposto: mini descrizione del numero 02, da sostituire con il testo reale da Contentful.",
+    "image": null,
+    "url": null
+  },
+  {
+    "number": 1,
+    "title": "Issue 01",
+    "excerpt": "Segnaposto: mini descrizione del numero 01, da sostituire con il testo reale da Contentful.",
+    "image": null,
+    "url": null
+  }
+]

@@ -454,7 +454,9 @@ function tickSeaDrift(tMs: number) {
 // ma non è affidabile ovunque (dipende dal supporto SMIL del browser sui filtri SVG) — un
 // rAF che scrive direttamente l'attributo funziona sempre, stessa garanzia già usata per la
 // deriva del mosaico.
-const SEA_WAVE_MIN = 10, SEA_WAVE_MAX = 46, SEA_WAVE_PERIOD = 7; // secondi per un giro completo
+// più veloce (7s -> 3.2s) e ampiezza leggermente maggiore — "vorrei che fosse più evidente
+// il movimento", richiesto esplicitamente ("immagino basti farlo più veloce").
+const SEA_WAVE_MIN = 8, SEA_WAVE_MAX = 54, SEA_WAVE_PERIOD = 3.2; // secondi per un giro completo
 let seaWaveT0: number | null = null;
 function tickSeaWave(tMs: number) {
   if (seaWaveT0 === null) seaWaveT0 = tMs;

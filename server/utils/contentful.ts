@@ -51,3 +51,26 @@ export function mapAboutEntry(entry: Entry<any>) {
     body: f.body || null // documento Rich Text di Contentful, o null se non compilato
   };
 }
+
+// Mappa una entry del content type "issue" — la pagina /issues (numeri precedenti della
+// rivista, link "Issues" nella topbar). Ogni numero è uno screenshot in breve + titolo
+// "Issue 0N" + mini descrizione, ed è un link (url) solo quando compilato: prima che ci sia
+// un url reale (Contentful vuoto), la entry resta visibile ma non cliccabile — vedi
+// app/pages/issues.vue. Stessa forma di mapHouseEntry per l'immagine (asset Contentful).
+export function mapIssueEntry(entry: Entry<any>) {
+  const f = entry.fields as any;
+  const asset = f.screenshot?.fields;
+  return {
+    number: f.number,
+    title: f.title || `Issue ${String(f.number ?? "").padStart(2, "0")}`,
+    excerpt: f.excerpt || "",
+    image: asset
+      ? {
+          url: asset.file.url.startsWith("//") ? "https:" + asset.file.url : asset.file.url,
+          width: asset.file.details?.image?.width || 1200,
+          height: asset.file.details?.image?.height || 750
+        }
+      : null,
+    url: f.url || null
+  };
+}
