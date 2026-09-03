@@ -5,7 +5,7 @@
     </div>
     <div class="list">
       <button
-        v-for="hs in houses"
+        v-for="hs in mobileHouses"
         :key="hs.slug"
         type="button"
         class="house"
@@ -37,6 +37,24 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ select: [house: any] }>();
+
+// Ordine della lista in vista mobile: DECISIONE DI DESIGN, non deriva dal campo "number"
+// (quello resta l'ordine "ufficiale"/di pubblicazione in Contentful e continua a fissare
+// la posizione di ogni isola sulla board desktop via ISLAND_LAYOUT, indipendente da qui).
+// Richiesto: isola della redazione per prima (appena pronta — riservato qui il numero 6,
+// da correggere se in Contentful finisce con un altro "number"), poi Crassula, Charlotte,
+// Fareda, Nicole, e April per ultima (il suo articolo esce dopo il lancio del numero).
+const MOBILE_ORDER: Record<number, number> = {
+  6: 0, // isola della redazione (non ancora in Contentful — number ipotizzato)
+  5: 1, // Crassula Shang
+  1: 2, // Charlotte Schuitenmaker
+  2: 3, // Fareda El Shaaer
+  4: 4, // Nicole Furtado
+  3: 5  // April Wei-West — per ultima
+};
+const mobileHouses = computed(() =>
+  [...props.houses].sort((a, b) => (MOBILE_ORDER[a.number] ?? 999) - (MOBILE_ORDER[b.number] ?? 999))
+);
 
 const svgEl = ref<SVGSVGElement | null>(null);
 
@@ -100,6 +118,24 @@ function createWalkerLayer() {
   const BODY_COLORS = ['#c1552c', '#e0a72e', '#3b6ea5', '#2f8f7a', '#8b5fa3', '#6b8e4f', '#d97b8f', '#4a5a6a', '#2c7fb8'];
   const SKIN_TONES = ['#e8b58c', '#c98a5b', '#8d5a3c', '#f2c9a0'];
   const PANTS_TONES = ['#2e2e2e', '#d8d2c2', '#5b6b73', '#efe9d8'];
+
+  // Round 6: "sostituire alcuni degli omini a nuoto con altre cose che si trovano in mare"
+  // — barchette, boe Argo (oceanografiche), rifiuti/detriti, balene. Solo tra i SINGOLI
+  // (mai nei gruppi: un gruppo resta persone, ha senso solo per loro la meccanica di
+  // coesione/richiamo-al-centro) e restano minoranza — il mare resta popolato soprattutto
+  // di persone, queste sono un tocco in più qua e là.
+  const BOAT_COLORS = ['#7a4a2b', '#9c5a33', '#54606b', '#efe9d8', '#8b3a3a'];
+  const DEBRIS_KINDS = ['bottle', 'bag', 'crate'];
+  const KIND_WEIGHTS: Array<[string, number]> = [['person', 0.60], ['boat', 0.15], ['argo', 0.10], ['debris', 0.10], ['whale', 0.05]];
+  // scala relativa (moltiplica WALKER_SCALE): una balena vista dall'alto è molto più
+  // grande di una persona, una boa Argo più piccola di una barca, ecc.
+  const KIND_SCALE: Record<string, number> = { person: 1, boat: 1.55, argo: 0.75, debris: 0.65, whale: 2.5 };
+  function pickKind(): string {
+    const r = Math.random();
+    let acc = 0;
+    for (const [k, w] of KIND_WEIGHTS) { acc += w; if (r <= acc) return k; }
+    return 'person';
+  }
 
   const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
   const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
@@ -207,6 +243,11 @@ function createWalkerLayer() {
           armLenA: 2.2 + Math.random() * 1.6,
           armLenB: 2.2 + Math.random() * 1.6,
           sitting: Math.random() < 0.22,    // ~1 su 5: posa raccolta/seduta invece che eretta
+          // "cosa" è questo walker: solo i singoli (g.size===1) possono essere altro che
+          // una persona — barca/boa/detrito/balena, vedi KIND_WEIGHTS più sopra.
+          kind: g.size === 1 ? pickKind() : 'person',
+          boatColor: BOAT_COLORS[(Math.random() * BOAT_COLORS.length) | 0],
+          debrisKind: DEBRIS_KINDS[(Math.random() * DEBRIS_KINDS.length) | 0],
         });
       }
     });
@@ -218,21 +259,10 @@ function createWalkerLayer() {
   // riferimento fornito). Ferme di natura — nessuna animazione di gambe/braccia legata al
   // movimento: la sola vita residua è il filo di respiro applicato in render() alla
   // posizione dell'intero gruppo <g>.
-  function buildPictogram(w: any) {
-    const op = (0.75 + 0.25 * w.depthOpacity).toFixed(2);
-    const g = el('g', { class: 'walker' });
-    const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
-    // ondine/schiuma: invisibili da fermi, compaiono e crescono con la velocità corrente
-    // (w.curSpeed, impostata in step()) — vedi render(). Sotto le gambe nell'ordine di
-    // disegno, così sembrano intorno ai piedi/nell'acqua smossa, non sopra il vestito.
-    const wake = el('ellipse', { cx: 0, cy: 1.5, rx: 5, ry: 3.2, fill: 'none', stroke: 'rgba(244,248,255,0.75)', 'stroke-width': 1, opacity: 0 });
-    const foamA = el('circle', { cx: -3, cy: 2.2, r: 0.6, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
-    const foamB = el('circle', { cx: 3, cy: 1.8, r: 0.55, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
-    const foamC = el('circle', { cx: 0, cy: 3.6, r: 0.5, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
-    // gambe: appena visibili sotto il busto, tono pantaloni/scarpe
+  // corpo di una PERSONA vista dall'alto (comportamento originale, invariato)
+  function buildPersonBody(w: any, op: string, g: SVGElement) {
     const legL = el('ellipse', { cx: -1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
     const legR = el('ellipse', { cx: 1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
-    // braccia: due segmenti color-pelle ad angoli/lunghezze diversi per omino (varietà di posa)
     const armL = el('line', {
       x1: 0, y1: -1, x2: (Math.cos(w.armA * Math.PI / 180) * w.armLenA).toFixed(2), y2: (Math.sin(w.armA * Math.PI / 180) * w.armLenA - 1).toFixed(2),
       stroke: w.skin, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: op
@@ -241,14 +271,80 @@ function createWalkerLayer() {
       x1: 0, y1: -1, x2: (Math.cos(w.armB * Math.PI / 180) * w.armLenB).toFixed(2), y2: (Math.sin(w.armB * Math.PI / 180) * w.armLenB - 1).toFixed(2),
       stroke: w.skin, 'stroke-width': 1.3, 'stroke-linecap': 'round', opacity: op
     });
-    // busto: vestito colorato — più tondo/raccolto se "seduto", più ovale/allungato se eretto
     const torso = w.sitting
       ? el('ellipse', { cx: 0, cy: 0, rx: 3.4, ry: 3.2, fill: w.color, opacity: op })
       : el('ellipse', { cx: 0, cy: -0.4, rx: 2.7, ry: 3.9, fill: w.color, opacity: op });
-    // testa: sempre nera, sempre l'elemento più in cima (renderizzata per ultima)
     const head = el('circle', { cx: 0, cy: (w.sitting ? -2.6 : -4.2), r: 1.7, fill: '#181818', opacity: op });
-    [shadow, wake, foamA, foamB, foamC, legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
-    return { g, legL, legR, armL, armR, torso, head, shadow, wake, foamA, foamB, foamC };
+    [legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
+  }
+  // piccola barca a remi/canoa vista dall'alto: scafo appuntito ai due capi + un banco
+  function buildBoatBody(w: any, op: string, g: SVGElement) {
+    const hull = el('path', {
+      d: 'M -6.5,0 Q -3.2,-2.3 0,-2.4 Q 3.2,-2.3 6.5,0 Q 3.2,2.3 0,2.4 Q -3.2,2.3 -6.5,0 Z',
+      fill: w.boatColor, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.3, opacity: op
+    });
+    const thwart = el('line', { x1: -1.8, y1: -1.6, x2: -1.8, y2: 1.6, stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.4, opacity: op });
+    const bow = el('circle', { cx: 5.6, cy: 0, r: 0.5, fill: 'rgba(20,20,15,0.35)', opacity: op });
+    [hull, thwart, bow].forEach(n => g.appendChild(n));
+  }
+  // boa oceanografica (tipo Argo): vista dall'alto è quasi solo il disco superiore +
+  // l'antenna che sporge, corpo bianco/panna con un anello arancione (alta visibilità)
+  function buildArgoBody(w: any, op: string, g: SVGElement) {
+    const body = el('circle', { cx: 0, cy: 0, r: 2.1, fill: '#efe9dc', stroke: '#d9622e', 'stroke-width': 0.6, opacity: op });
+    const cap = el('circle', { cx: 0, cy: 0, r: 0.7, fill: '#d9622e', opacity: op });
+    const antenna = el('line', { x1: 0, y1: 0, x2: 3.4, y2: -1.1, stroke: '#8a8578', 'stroke-width': 0.35, opacity: op });
+    [body, antenna, cap].forEach(n => g.appendChild(n));
+  }
+  // detrito/rifiuto: tre varianti minime — bottiglia, sacchetto, cassetta — sempre
+  // piccole e opache, mai al centro dell'attenzione
+  function buildDebrisBody(w: any, op: string, g: SVGElement) {
+    if (w.debrisKind === 'bottle') {
+      const body = el('ellipse', { cx: 0, cy: 0.3, rx: 1.1, ry: 2.6, fill: 'rgba(120,160,120,0.55)', stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.25, opacity: op });
+      const cap = el('circle', { cx: 0, cy: -2.3, r: 0.6, fill: 'rgba(70,90,70,0.7)', opacity: op });
+      [body, cap].forEach(n => g.appendChild(n));
+    } else if (w.debrisKind === 'bag') {
+      const bag = el('path', { d: 'M -2.6,-0.8 Q -1.2,-2.4 0.4,-1.6 Q 2.4,-1.8 2.2,0.4 Q 2.6,2.2 0.2,2.2 Q -2.2,2.4 -2.6,-0.8 Z', fill: 'rgba(230,230,225,0.4)', stroke: 'rgba(120,120,110,0.4)', 'stroke-width': 0.25, opacity: op });
+      g.appendChild(bag);
+    } else {
+      const crate = el('rect', { x: -2.2, y: -2.2, width: 4.4, height: 4.4, fill: 'rgba(139,90,43,0.65)', stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3, opacity: op });
+      const slat = el('line', { x1: -2.2, y1: 0, x2: 2.2, y2: 0, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3, opacity: op });
+      const slat2 = el('line', { x1: 0, y1: -2.2, x2: 0, y2: 2.2, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3, opacity: op });
+      [crate, slat, slat2].forEach(n => g.appendChild(n));
+    }
+  }
+  // balena vista dall'alto: corpo affusolato + coda a ventaglio + sfiatatoio
+  function buildWhaleBody(w: any, op: string, g: SVGElement) {
+    const body = el('ellipse', { cx: -0.6, cy: 0, rx: 8.2, ry: 2.9, fill: '#3c4f5c', opacity: op });
+    const belly = el('ellipse', { cx: -0.6, cy: 0.3, rx: 6.6, ry: 1.5, fill: '#5b7583', opacity: (parseFloat(op) * 0.8).toFixed(2) });
+    const tail = el('path', { d: 'M 7.4,0 Q 9.6,-2.6 11,-3.2 Q 9.6,0 11,3.2 Q 9.6,2.6 7.4,0 Z', fill: '#3c4f5c', opacity: op });
+    const blowhole = el('circle', { cx: -6.6, cy: 0, r: 0.5, fill: '#1f2a30', opacity: op });
+    [body, tail, belly, blowhole].forEach(n => g.appendChild(n));
+  }
+
+  // ---- pittogramma visto dall'alto. Per default una persona (vestito colorato, braccia
+  // color-pelle a due angoli fissi, testa nera sempre in cima); i SINGOLI possono invece
+  // essere barca/boa/detrito/balena (vedi w.kind, assegnato in initWalkers). Ferme di
+  // natura — nessuna animazione di gambe/braccia legata al movimento: la sola vita
+  // residua è il filo di respiro applicato in render() alla posizione dell'intero <g>.
+  function buildPictogram(w: any) {
+    const op = (0.75 + 0.25 * w.depthOpacity).toFixed(2);
+    const g = el('g', { class: 'walker' });
+    const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
+    // ondine/schiuma: invisibili da fermi, compaiono e crescono con la velocità corrente
+    // (w.curSpeed, impostata in step()) — vedi render(). Sotto il "corpo" nell'ordine di
+    // disegno, così sembrano intorno all'acqua smossa, non sopra. Valgono per ogni kind
+    // (barche/balene fanno scia come le persone che sguazzano).
+    const wake = el('ellipse', { cx: 0, cy: 1.5, rx: 5, ry: 3.2, fill: 'none', stroke: 'rgba(244,248,255,0.75)', 'stroke-width': 1, opacity: 0 });
+    const foamA = el('circle', { cx: -3, cy: 2.2, r: 0.6, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
+    const foamB = el('circle', { cx: 3, cy: 1.8, r: 0.55, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
+    const foamC = el('circle', { cx: 0, cy: 3.6, r: 0.5, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
+    [shadow, wake, foamA, foamB, foamC].forEach(n => g.appendChild(n));
+    if (w.kind === 'boat') buildBoatBody(w, op, g);
+    else if (w.kind === 'argo') buildArgoBody(w, op, g);
+    else if (w.kind === 'debris') buildDebrisBody(w, op, g);
+    else if (w.kind === 'whale') buildWhaleBody(w, op, g);
+    else buildPersonBody(w, op, g);
+    return { g, shadow, wake, foamA, foamB, foamC };
   }
 
   let mountedSvg: SVGSVGElement | null = null, pointerGrid: { gx: number; gy: number } | null = null;
@@ -347,7 +443,8 @@ function createWalkerLayer() {
       // ondeggiare autonomo (stesso principio del respiro, ma sull'angolo) — un po' di
       // "vita" senza farli girare su loro stessi in modo innaturale.
       const rot = w.rot + Math.sin(simT * w.noiseFX * 0.6 + w.noiseAY) * 7;
-      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${WALKER_SCALE})`);
+      const kscale = WALKER_SCALE * (KIND_SCALE[w.kind] || 1);
+      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${kscale.toFixed(1)})`);
 
       // ondine/schiuma: compaiono e crescono con la velocità corrente, invisibili da fermi.
       const spF = Math.min(1, (w.curSpeed || 0) / MAX_SPEED);
@@ -455,6 +552,42 @@ function topoCellDots(gx0: number, gy0: number) {
   }
   return g;
 }
+// ---- entità IA su roccia lavica, sull'isola di Nicole (number:4) — su richiesta di
+// Nicole ("lava rock nanoparticle AI entity in post-apocalyptic Hawai'i"), scelto lo
+// stile "monolite con occhi che brillano" (rif. HAL 9000/2001: Odissea nello spazio)
+// invece del robot solitario stile Wall-E. È un pittogramma piatto (stesso registro
+// degli omini/creature marine), non un render fotorealistico come l'isola sotto —
+// nessuno strumento di generazione immagini è disponibile in questa sessione — quindi
+// resta volutamente un piccolo "accento"/marker sulla scena, non fuso nella fotografia.
+// Coordinate in unità locali piccole come i pittogrammi omino/balena: la vera scala
+// arriva dal wrapper scale(ROBOT_SCALE) nel transform, non da questi numeri.
+const ROBOT_SCALE = 105;
+function buildNicoleRobot(isl: { gx0: number; gy0: number; cols: number; rows: number }) {
+  const cx = isl.gx0 + isl.cols * 0.60, cy = isl.gy0 + isl.rows * 0.34; // in disparte, non al centro dell'isola
+  const p = proj(cx, cy);
+  const g = el('g', { class: 'nicole-robot', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) scale(${ROBOT_SCALE})` });
+  const shadow = el('ellipse', { cx: 0, cy: 1.1, rx: 2.6, ry: 1.3, fill: 'rgba(10,8,6,0.4)' });
+  // alone ambrato a terra: presenza "attiva" anche a distanza, pulsa piano
+  const groundGlow = el('ellipse', { cx: 0, cy: 0.6, rx: 3.4, ry: 1.8, fill: 'rgba(255,130,40,0.16)', class: 'hal-ground-glow' });
+  // monolite: blocco di roccia lavica scura, leggermente rastremato verso l'alto
+  const body = el('path', {
+    d: 'M -1.55,-7.6 L 1.55,-7.6 L 2.15,0 L -2.15,0 Z',
+    fill: '#18140f', stroke: 'rgba(60,30,15,0.6)', 'stroke-width': 0.12
+  });
+  // spigolo in luce, sul lato sinistro — dà volume senza serve un gradiente
+  const edge = el('path', { d: 'M -1.55,-7.6 L -0.5,-7.6 L -0.9,0 L -2.15,0 Z', fill: 'rgba(90,60,40,0.35)' });
+  // crepe/venature di lava (linee sottili, non simmetriche)
+  const crack1 = el('polyline', { points: '-0.6,-6.4 0.1,-4.6 -0.3,-2.4 0.4,-0.6', fill: 'none', stroke: 'rgba(210,90,35,0.55)', 'stroke-width': 0.14, 'stroke-linecap': 'round' });
+  const crack2 = el('polyline', { points: '1.1,-5.2 0.6,-3.1 1.2,-1.2', fill: 'none', stroke: 'rgba(210,90,35,0.4)', 'stroke-width': 0.1, 'stroke-linecap': 'round' });
+  // occhi: due luci ambra, con un alone che pulsa (via CSS) — l'unico elemento "vivo"
+  const eyeGlowL = el('circle', { cx: -0.62, cy: -6.35, r: 0.85, fill: 'rgba(255,150,55,0.4)', class: 'hal-eye-glow' });
+  const eyeGlowR = el('circle', { cx: 0.62, cy: -6.35, r: 0.85, fill: 'rgba(255,150,55,0.4)', class: 'hal-eye-glow' });
+  const eyeL = el('circle', { cx: -0.62, cy: -6.35, r: 0.3, fill: '#ffb454' });
+  const eyeR = el('circle', { cx: 0.62, cy: -6.35, r: 0.3, fill: '#ffb454' });
+  [shadow, groundGlow, body, edge, crack1, crack2, eyeGlowL, eyeGlowR, eyeL, eyeR].forEach(n => g.appendChild(n));
+  return g;
+}
+
 function buildTopoLayer() {
   const g = el('g', { class: 'topo-layer' });
   // quadrati scelti a mano in acqua aperta, lontano dalle isole, allineati a multipli di 24
@@ -716,6 +849,11 @@ function buildBoard() {
     btn.addEventListener('blur', () => { wrap.classList.remove('house-hover'); });
     btn.addEventListener('click', () => { emit('select', hs); });
   });
+
+  // ---- entità IA su roccia lavica sull'isola di Nicole — disegnata DOPO le isole così
+  // sta sopra la PNG (non sotto, come omini/topo). Vedi buildNicoleRobot più sopra.
+  const nicoleIsl = props.houses.find(h => h.number === 4);
+  if (nicoleIsl) svg.appendChild(buildNicoleRobot(nicoleIsl));
 }
 
 onMounted(() => {
@@ -756,6 +894,17 @@ watch(() => props.houses, buildBoard, { deep: true });
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4%); }
 }
+
+/* entità IA sull'isola di Nicole: occhi/alone che pulsano piano, l'unico segno di vita
+   del monolite — vedi buildNicoleRobot(). Due velocità leggermente diverse (occhi più
+   rapidi dell'alone a terra) così non è un lampeggio meccanico/perfettamente in fase. */
+@keyframes halEyePulse{ 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
+@keyframes halGroundPulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+.hal-eye-glow{ animation: halEyePulse 2.6s ease-in-out infinite; transform-origin: center; }
+.hal-ground-glow{ animation: halGroundPulse 4.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce){
+  .hal-eye-glow, .hal-ground-glow{ animation: none !important; opacity: .8; }
+}
 .house-frame img{
   width:100%; display:block;
   /* isole = PNG a sfondo trasparente: ombra portata che segue la sagoma, le fa leggere
@@ -781,7 +930,13 @@ watch(() => props.houses, buildBoard, { deep: true });
 .list{ display:none; }
 @media (max-width: 760px){
   .board-wrap{ display:none; }
-  .list{ display:flex; flex-direction:column; align-items:center; gap:28px; padding:8px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
+  /* sfondo "acqua" anche in vista mobile: prima la board isometrica (unica cosa che
+     dipingeva un tono marino) spariva del tutto sotto i 760px e restava il beige piatto
+     della pagina — qui basta un gradiente statico, coerente con la palette del mosaico. */
+  .board-root{ background: linear-gradient(180deg, #dce8e6 0%, #c7dbdb 45%, #b7d0d2 100%); min-height: 100%; }
+  /* padding-top più ampio: la topbar è "position:absolute" sopra tutto (icone 80px +
+     etichetta + padding verticale ≈ 130px) e prima la prima isola ci finiva sotto. */
+  .list{ display:flex; flex-direction:column; align-items:center; gap:28px; padding:150px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
   .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
   .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }
   .list .caption{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; }
