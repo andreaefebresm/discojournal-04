@@ -625,6 +625,48 @@ function buildSeaObjectsLayer() {
   return g;
 }
 
+// --- Animali strani, in scena come SEA_OBJECTS (statici, a colori, non cliccabili) ---
+// Stessa logica delle mini-isole: rot:0 fisso già da ora (immagini fotorealistiche in
+// arrivo da Gemini, ruotarle sembrerebbe sbagliato) e supporto img/imgAspect pronto per
+// quando arrivano le immagini vere — placeholder procedurale (sagoma generica) nel
+// frattempo. ANIMAL_W = larghezza in unità locali quando c'è un'immagine vera.
+const ANIMAL_W = 8;
+const ANIMAL_IMG_ASPECT = 700 / 382;
+const ANIMALS: Array<{ gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }> = [
+  { gx: 150, gy: 380, rot: 0, size: 1.0, color: '#8a6a9c' },
+  { gx: -230, gy: 400, rot: 0, size: 0.85, color: '#4a7a6a' },
+  { gx: 330, gy: -260, rot: 0, size: 1.1, color: '#b06a4a' },
+  { gx: -330, gy: 20, rot: 0, size: 0.75, color: '#5a6a9c' },
+  { gx: -260, gy: -420, rot: 0, size: 0.95, color: '#9c7a4a' },
+];
+function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }) {
+  const p = proj(a.gx, a.gy);
+  const scale = (a.img ? ANIMAL_W : 34) * a.size;
+  const g = el('g', { class: 'animal', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${a.rot}) scale(${scale.toFixed(1)})` });
+  if (a.img) {
+    const H = 1 / (a.imgAspect || ANIMAL_IMG_ASPECT);
+    const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: 0.26, ry: 0.08, fill: 'rgba(10,20,15,0.22)' });
+    const img = el('image', { href: a.img, x: -0.5, y: (-H / 2).toFixed(2), width: 1, height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
+    [shadow, img].forEach(n => g.appendChild(n));
+    return g;
+  }
+  // placeholder generico: corpo + coda + due "appendici" stravaganti + occhio, così da
+  // suggerire "creatura strana" senza dover disegnare 5 animali diversi a mano.
+  const shadow = el('ellipse', { cx: 0, cy: 0.9, rx: 2.6, ry: 1, fill: 'rgba(10,20,15,0.2)' });
+  const body = el('ellipse', { cx: 0, cy: 0, rx: 2.2, ry: 1.3, fill: a.color, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.15 });
+  const tail = el('path', { d: 'M 2.1,0 Q 3.4,-0.9 3.8,-1.6 Q 3.2,-0.1 3.8,1.6 Q 3.4,0.9 2.1,0 Z', fill: a.color, opacity: 0.85 });
+  const fin1 = el('path', { d: 'M -0.6,-1.1 Q -1.3,-2.2 -0.3,-2.4 Q 0.4,-1.6 -0.6,-1.1 Z', fill: a.color, opacity: 0.7 });
+  const fin2 = el('path', { d: 'M -0.9,1.1 Q -1.9,1.7 -1.4,2.4 Q -0.4,2.0 -0.9,1.1 Z', fill: a.color, opacity: 0.7 });
+  const eye = el('circle', { cx: -1.5, cy: -0.3, r: 0.22, fill: '#1f2a30' });
+  [shadow, body, tail, fin1, fin2, eye].forEach(n => g.appendChild(n));
+  return g;
+}
+function buildAnimalsLayer() {
+  const g = el('g', { class: 'animal-layer' });
+  ANIMALS.forEach(a => g.appendChild(buildAnimal(a)));
+  return g;
+}
+
 function buildTopoLayer() {
   const g = el('g', { class: 'topo-layer' });
   // quadrati scelti a mano in acqua aperta, lontano dalle isole, allineati a multipli di 24
@@ -838,6 +880,10 @@ function buildBoard() {
   // buildSeaObjectsLayer più sopra.
   svg.appendChild(buildSeaObjectsLayer());
 
+  // ---- animali strani: statici, non cliccabili, a colori (non desaturati) — vedi
+  // buildAnimalsLayer più sopra.
+  svg.appendChild(buildAnimalsLayer());
+
   // ---- isole: PNG con terreno/nature/edifici già inclusi, appoggiate direttamente sul mare.
   props.houses.forEach(hs => {
     const corners = plotCorners(hs);
@@ -929,6 +975,7 @@ watch(() => props.houses, buildBoard, { deep: true });
 /* "oggettini" del mare (barche/boe/detriti/balene): statici, non cliccabili, ma NON
    desaturati come le mini-isole — sono oggetti "in scena", a colori come le isole. */
 .sea-object{ pointer-events:none; }
+.animal{ pointer-events:none; }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
