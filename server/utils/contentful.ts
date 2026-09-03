@@ -53,17 +53,18 @@ export function mapAboutEntry(entry: Entry<any>) {
 }
 
 // Mappa una entry del content type "issue" — la pagina /issues (numeri precedenti della
-// rivista, link "Issues" nella topbar). Ogni numero è uno screenshot in breve + titolo
-// "Issue 0N" + mini descrizione, ed è un link (url) solo quando compilato: prima che ci sia
-// un url reale (Contentful vuoto), la entry resta visibile ma non cliccabile — vedi
-// app/pages/issues.vue. Stessa forma di mapHouseEntry per l'immagine (asset Contentful).
+// rivista, link "Issues" nella topbar). Ogni numero è solo foto + titolo ("Issue N" —
+// stesso stile del vecchio sito), ed è un link (url) solo quando compilato: prima che ci
+// sia un url reale (Contentful vuoto), la entry resta visibile ma non cliccabile — vedi
+// app/pages/issues.vue. In pratica la pagina resta statica finché non si configura
+// Contentful: senza credenziali va sempre a server/data/issues.sample.json (vedi
+// server/api/issues.get.ts), che è la fonte "ufficiale" per ora.
 export function mapIssueEntry(entry: Entry<any>) {
   const f = entry.fields as any;
   const asset = f.screenshot?.fields;
   return {
     number: f.number,
-    title: f.title || `Issue ${String(f.number ?? "").padStart(2, "0")}`,
-    excerpt: f.excerpt || "",
+    title: f.title || `Issue ${f.number ?? ""}`,
     image: asset
       ? {
           url: asset.file.url.startsWith("//") ? "https:" + asset.file.url : asset.file.url,
