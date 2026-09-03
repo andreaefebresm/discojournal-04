@@ -449,6 +449,23 @@ function tickSeaDrift(tMs: number) {
   requestAnimationFrame(tickSeaDrift);
 }
 
+// ---- onda del mare: guidata via JS (stesso principio di tickSeaDrift sopra), NON più via
+// <animate> SMIL sull'attributo "scale" del feDisplacementMap. Il giro precedente usava SMIL,
+// ma non è affidabile ovunque (dipende dal supporto SMIL del browser sui filtri SVG) — un
+// rAF che scrive direttamente l'attributo funziona sempre, stessa garanzia già usata per la
+// deriva del mosaico.
+const SEA_WAVE_MIN = 10, SEA_WAVE_MAX = 46, SEA_WAVE_PERIOD = 7; // secondi per un giro completo
+let seaWaveT0: number | null = null;
+function tickSeaWave(tMs: number) {
+  if (seaWaveT0 === null) seaWaveT0 = tMs;
+  const t = (tMs - seaWaveT0) / 1000;
+  const mid = (SEA_WAVE_MIN + SEA_WAVE_MAX) / 2, ampl = (SEA_WAVE_MAX - SEA_WAVE_MIN) / 2;
+  const scale = mid + Math.sin((t / SEA_WAVE_PERIOD) * 2 * Math.PI) * ampl;
+  const disp = document.getElementById('waveDisp');
+  if (disp) disp.setAttribute('scale', scale.toFixed(1));
+  requestAnimationFrame(tickSeaWave);
+}
+
 // ---- "griglia topografica" v2: corretto un difetto del giro precedente — gli inserti
 // (allora anelli/badge liberi) potevano cadere ovunque, senza rispettare i quadrati della
 // griglia del mosaico. Ora SOLO due motivi (righine diagonali, pallini), e ognuno è
@@ -470,7 +487,8 @@ function tickSeaDrift(tMs: number) {
 // ad Andrea), ogni entry qui sotto va convertita in un <img>/foreignObject come le isole
 // principali, mantenendo la stessa posizione (gx/gy) e la stessa classe .mini-island per
 // il filtro di desaturazione — il resto del codice non cambia.
-const MINI_ISLAND_SCALE = 130;
+// raddoppiata su richiesta esplicita ("grandi il doppio").
+const MINI_ISLAND_SCALE = 260;
 // tutte e 10 hanno ora l'immagine vera generata da Andrea con Gemini — niente più
 // placeholder procedurali. rot:0 su tutte (foto fotorealistiche, non poligoni astratti:
 // ruotarle sembra sbagliato, come da richiesta). imgAspect solo dove diverso dal formato
@@ -509,13 +527,13 @@ function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: nu
     // radici. Larghezza fissa in unità locali (14: ancora più grande, su richiesta),
     // altezza derivata dall'aspect ratio della sorgente (imgAspect per-entry se diverso
     // dal formato standard).
+    // niente più ombra sotto: a taglia grande risultava storta/disallineata — tolta del
+    // tutto su richiesta esplicita ("non mettere ombre storte, anzi non metterle proprio").
     const W = 14, H = W / (mi.imgAspect || MINI_IMG_ASPECT);
-    const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: W * 0.26, ry: W * 0.08, fill: 'rgba(10,20,15,0.22)' });
     const img = el('image', { href: mi.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
-    [shadow, img].forEach(n => g.appendChild(n));
+    g.appendChild(img);
     return g;
   }
-  const shadow = el('ellipse', { cx: 0, cy: 1.6, rx: 5, ry: 2.6, fill: 'rgba(10,20,15,0.22)' });
   const radii = MINI_VARIANTS[mi.variant % MINI_VARIANTS.length];
   const pts = radii.map((r, i) => {
     const a = (Math.PI * 2 * i) / radii.length;
@@ -524,7 +542,7 @@ function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: nu
   const land = el('polygon', { points: pts, fill: MINI_FILLS[mi.variant % MINI_FILLS.length], stroke: 'rgba(30,30,25,0.35)', 'stroke-width': 0.15 });
   const speck1 = el('circle', { cx: -radii[0] * 0.3, cy: 0.3, r: 0.5, fill: 'rgba(40,35,30,0.28)' });
   const speck2 = el('circle', { cx: radii[2] * 0.35, cy: -0.4, r: 0.4, fill: 'rgba(40,35,30,0.22)' });
-  [shadow, land, speck1, speck2].forEach(n => g.appendChild(n));
+  [land, speck1, speck2].forEach(n => g.appendChild(n));
   return g;
 }
 function buildMiniIslandsLayer() {
@@ -546,7 +564,8 @@ function buildMiniIslandsLayer() {
 // scoperto solo con uno zoom reale sullo screenshot, non dai soli bounding-box). Ritarati
 // per una taglia effettivamente visibile: boat/whale più in vista, argo/debris più piccoli
 // ma comunque leggibili come sagoma, non puntini.
-const SEA_SCALE: Record<string, number> = { boat: 72, argo: 100, debris: 95, whale: 70 };
+// raddoppiati su richiesta esplicita ("grandi il doppio").
+const SEA_SCALE: Record<string, number> = { boat: 144, argo: 200, debris: 190, whale: 140 };
 // larghezza dell'immagine in unità locali — invariata: è SEA_SCALE (sopra) che ora dà la
 // taglia finale visibile.
 const SEA_IMG_W: Record<string, number> = { boat: 13, argo: 5.5, debris: 4.5, whale: 19 };
@@ -573,8 +592,8 @@ function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number;
   const delay = (-(seed % 29) / 10).toFixed(2);
   const float = el('g', { class: 'sea-object-float', style: `animation-duration:${dur}s;animation-delay:${delay}s;` });
   g.appendChild(float);
-  const shadow = el('ellipse', { cx: 0, cy: 1.2, rx: so.type === 'whale' ? 9 : 4, ry: so.type === 'whale' ? 3.4 : 2, fill: 'rgba(10,30,35,0.18)' });
-  float.appendChild(shadow);
+  // niente più ombra sotto: a taglia grande risultava storta/disallineata — tolta del tutto
+  // su richiesta esplicita ("non mettere ombre storte, anzi non metterle proprio").
   if (so.img) {
     // immagine vera: stesso schema delle mini-isole, larghezza in unità locali da
     // SEA_IMG_W (per tipo), altezza dall'aspect ratio della sorgente.
@@ -631,8 +650,9 @@ function buildSeaObjectsLayer() {
 // pensata per dare una taglia finale comparabile al placeholder che sostituisce (corpo
 // rx:2.2 → diametro ~4.4).
 // stesso discorso di SEA_SCALE sopra: 34 dava creature larghe 4-7px a schermo, invisibili.
-// 150 restava ancora "quasi non si vedono" (richiesta esplicita) — ritarato più su.
-const ANIMAL_SCALE = 260;
+// 150 restava ancora "quasi non si vedono" (richiesta esplicita) — ritarato più su, poi
+// raddoppiato di nuovo ("grandi il doppio").
+const ANIMAL_SCALE = 520;
 const ANIMAL_IMG_W = 4.6;
 const ANIMAL_IMG_ASPECT = 600 / 327;
 // raddoppiati (ogni specie compare 2 volte, posizioni diverse) e più sparsi in acqua aperta
@@ -659,22 +679,22 @@ function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; col
   const delay = (-(seed % 23) / 10).toFixed(2);
   const float = el('g', { class: 'animal-float', style: `animation-duration:${dur}s;animation-delay:${delay}s;` });
   g.appendChild(float);
+  // niente più ombra sotto: a taglia grande risultava storta/disallineata — tolta del tutto
+  // su richiesta esplicita ("non mettere ombre storte, anzi non metterle proprio").
   if (a.img) {
     const W = ANIMAL_IMG_W, H = W / (a.imgAspect || ANIMAL_IMG_ASPECT);
-    const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: W * 0.26, ry: W * 0.08, fill: 'rgba(10,20,15,0.22)' });
     const img = el('image', { href: a.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
-    [shadow, img].forEach(n => float.appendChild(n));
+    float.appendChild(img);
     return g;
   }
   // placeholder generico: corpo + coda + due "appendici" stravaganti + occhio, così da
   // suggerire "creatura strana" senza dover disegnare 5 animali diversi a mano.
-  const shadow = el('ellipse', { cx: 0, cy: 0.9, rx: 2.6, ry: 1, fill: 'rgba(10,20,15,0.2)' });
   const body = el('ellipse', { cx: 0, cy: 0, rx: 2.2, ry: 1.3, fill: a.color, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.15 });
   const tail = el('path', { d: 'M 2.1,0 Q 3.4,-0.9 3.8,-1.6 Q 3.2,-0.1 3.8,1.6 Q 3.4,0.9 2.1,0 Z', fill: a.color, opacity: 0.85 });
   const fin1 = el('path', { d: 'M -0.6,-1.1 Q -1.3,-2.2 -0.3,-2.4 Q 0.4,-1.6 -0.6,-1.1 Z', fill: a.color, opacity: 0.7 });
   const fin2 = el('path', { d: 'M -0.9,1.1 Q -1.9,1.7 -1.4,2.4 Q -0.4,2.0 -0.9,1.1 Z', fill: a.color, opacity: 0.7 });
   const eye = el('circle', { cx: -1.5, cy: -0.3, r: 0.22, fill: '#1f2a30' });
-  [shadow, body, tail, fin1, fin2, eye].forEach(n => float.appendChild(n));
+  [body, tail, fin1, fin2, eye].forEach(n => float.appendChild(n));
   return g;
 }
 function buildAnimalsLayer() {
@@ -771,9 +791,7 @@ function buildBoard() {
       <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="7" result="handN"/>
       <feDisplacementMap in="SourceGraphic" in2="handN" scale="55" xChannelSelector="R" yChannelSelector="G" result="handWobbled"/>
       <feTurbulence type="fractalNoise" baseFrequency="0.020" numOctaves="2" seed="21" result="waveN"/>
-      <feDisplacementMap in="handWobbled" in2="waveN" xChannelSelector="R" yChannelSelector="G">
-        <animate attributeName="scale" values="10;46;10" dur="7s" repeatCount="indefinite"/>
-      </feDisplacementMap>
+      <feDisplacementMap id="waveDisp" in="handWobbled" in2="waveN" scale="28" xChannelSelector="R" yChannelSelector="G"/>
     </filter>`;
   // grana animata: un feOffset tra la turbolenza e il color-matrix, con dx/dy che
   // "camminano" lentamente via <animate> SMIL nativo (nessun JS extra, nessun ricalcolo
@@ -960,6 +978,7 @@ function buildBoard() {
 onMounted(() => {
   buildBoard();
   requestAnimationFrame(tickSeaDrift);
+  requestAnimationFrame(tickSeaWave);
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
