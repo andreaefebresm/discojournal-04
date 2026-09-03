@@ -535,10 +535,10 @@ function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: nu
   if (mi.img) {
     // immagine vera (fotorealistica, stesso stile delle isole): niente poligono/speckle
     // procedurali — solo l'immagine, centrata sull'ancora, più un'ombra leggera sotto le
-    // radici. Larghezza fissa in unità locali (11: un po' più grande del placeholder che
-    // sostituiva), altezza derivata dall'aspect ratio della sorgente (imgAspect per-entry
-    // se diverso dal formato standard).
-    const W = 11, H = W / (mi.imgAspect || MINI_IMG_ASPECT);
+    // radici. Larghezza fissa in unità locali (14: ancora più grande, su richiesta),
+    // altezza derivata dall'aspect ratio della sorgente (imgAspect per-entry se diverso
+    // dal formato standard).
+    const W = 14, H = W / (mi.imgAspect || MINI_IMG_ASPECT);
     const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: W * 0.26, ry: W * 0.08, fill: 'rgba(10,20,15,0.22)' });
     const img = el('image', { href: mi.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
     [shadow, img].forEach(n => g.appendChild(n));
@@ -571,51 +571,73 @@ function buildMiniIslandsLayer() {
 // convertita in un <img>/foreignObject, stessa posizione — NON desaturate come le
 // mini-isole: questi sono oggetti "in scena", non texture di sfondo.
 const SEA_SCALE: Record<string, number> = { boat: 26.5, argo: 12.8, debris: 11, whale: 42.5 };
-const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string }> = [
-  { type: 'boat', gx: 300, gy: 350, rot: 15, color: '#7a4a2b' },
-  { type: 'boat', gx: -430, gy: 150, rot: -40, color: '#54606b' },
-  { type: 'argo', gx: 50, gy: 390, rot: 0 },
-  { type: 'argo', gx: 450, gy: -200, rot: 0 },
-  { type: 'debris', gx: -150, gy: 260, rot: 30, variant: 'bottle' },
-  { type: 'debris', gx: 0, gy: -150, rot: -20, variant: 'crate' },
-  { type: 'whale', gx: -90, gy: 440, rot: 25 },
+// larghezza dell'immagine in unità locali (stessa scala delle vecchie sagome procedurali
+// che sostituisce — es. lo scafo della barca andava da -6.5 a 6.5 = 13 di larghezza), così
+// la taglia finale resta quella già scelta/verificata per tipo.
+const SEA_IMG_W: Record<string, number> = { boat: 13, argo: 5.5, debris: 4.5, whale: 19 };
+const SEA_IMG_ASPECT = 600 / 327;
+const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }> = [
+  { type: 'boat', gx: 300, gy: 350, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
+  { type: 'boat', gx: -430, gy: 150, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
+  { type: 'argo', gx: 50, gy: 390, rot: 0, img: '/assets/sea-objects/argo1.png' },
+  { type: 'argo', gx: 450, gy: -200, rot: 0, img: '/assets/sea-objects/argo2.png' },
+  { type: 'debris', gx: -150, gy: 260, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
+  { type: 'debris', gx: 0, gy: -150, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
+  { type: 'whale', gx: -90, gy: 440, rot: 25, img: '/assets/sea-objects/whale.png' },
 ];
-function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number; color?: string; variant?: string }) {
+function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }) {
   const p = proj(so.gx, so.gy);
   const scale = SEA_SCALE[so.type];
   const g = el('g', { class: 'sea-object', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${so.rot}) scale(${scale})` });
+  // wrapper interno per il "galleggiamento": la posizione/rotazione/scala restano fisse sul
+  // <g> esterno, il bob/ondeggiamento via CSS va sull'interno (vedi .sea-object-float).
+  // durata/ritardo variano per oggetto (dedotti dalla posizione, deterministico) così non
+  // ondeggiano tutti in sincrono.
+  const seed = Math.abs(so.gx * 7 + so.gy * 13) % 100;
+  const dur = (3.2 + (seed % 17) / 10).toFixed(2);
+  const delay = (-(seed % 29) / 10).toFixed(2);
+  const float = el('g', { class: 'sea-object-float', style: `animation-duration:${dur}s;animation-delay:${delay}s;` });
+  g.appendChild(float);
   const shadow = el('ellipse', { cx: 0, cy: 1.2, rx: so.type === 'whale' ? 9 : 4, ry: so.type === 'whale' ? 3.4 : 2, fill: 'rgba(10,30,35,0.18)' });
-  g.appendChild(shadow);
+  float.appendChild(shadow);
+  if (so.img) {
+    // immagine vera: stesso schema delle mini-isole, larghezza in unità locali da
+    // SEA_IMG_W (per tipo), altezza dall'aspect ratio della sorgente.
+    const W = SEA_IMG_W[so.type], H = W / (so.imgAspect || SEA_IMG_ASPECT);
+    const img = el('image', { href: so.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
+    float.appendChild(img);
+    return g;
+  }
   if (so.type === 'boat') {
     const hull = el('path', { d: 'M -6.5,0 Q -3.2,-2.3 0,-2.4 Q 3.2,-2.3 6.5,0 Q 3.2,2.3 0,2.4 Q -3.2,2.3 -6.5,0 Z', fill: so.color, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.3 });
     const thwart = el('line', { x1: -1.8, y1: -1.6, x2: -1.8, y2: 1.6, stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.4 });
     const bow = el('circle', { cx: 5.6, cy: 0, r: 0.5, fill: 'rgba(20,20,15,0.35)' });
-    [hull, thwart, bow].forEach(n => g.appendChild(n));
+    [hull, thwart, bow].forEach(n => float.appendChild(n));
   } else if (so.type === 'argo') {
     const body = el('circle', { cx: 0, cy: 0, r: 2.1, fill: '#efe9dc', stroke: '#d9622e', 'stroke-width': 0.6 });
     const cap = el('circle', { cx: 0, cy: 0, r: 0.7, fill: '#d9622e' });
     const antenna = el('line', { x1: 0, y1: 0, x2: 3.4, y2: -1.1, stroke: '#8a8578', 'stroke-width': 0.35 });
-    [body, antenna, cap].forEach(n => g.appendChild(n));
+    [body, antenna, cap].forEach(n => float.appendChild(n));
   } else if (so.type === 'debris') {
     if (so.variant === 'bottle') {
       const body = el('ellipse', { cx: 0, cy: 0.3, rx: 1.1, ry: 2.6, fill: 'rgba(120,160,120,0.75)', stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.25 });
       const cap = el('circle', { cx: 0, cy: -2.3, r: 0.6, fill: 'rgba(70,90,70,0.85)' });
-      [body, cap].forEach(n => g.appendChild(n));
+      [body, cap].forEach(n => float.appendChild(n));
     } else if (so.variant === 'bag') {
       const bag = el('path', { d: 'M -2.6,-0.8 Q -1.2,-2.4 0.4,-1.6 Q 2.4,-1.8 2.2,0.4 Q 2.6,2.2 0.2,2.2 Q -2.2,2.4 -2.6,-0.8 Z', fill: 'rgba(230,230,225,0.6)', stroke: 'rgba(120,120,110,0.4)', 'stroke-width': 0.25 });
-      g.appendChild(bag);
+      float.appendChild(bag);
     } else {
       const crate = el('rect', { x: -2.2, y: -2.2, width: 4.4, height: 4.4, fill: 'rgba(139,90,43,0.85)', stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3 });
       const slat = el('line', { x1: -2.2, y1: 0, x2: 2.2, y2: 0, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3 });
       const slat2 = el('line', { x1: 0, y1: -2.2, x2: 0, y2: 2.2, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3 });
-      [crate, slat, slat2].forEach(n => g.appendChild(n));
+      [crate, slat, slat2].forEach(n => float.appendChild(n));
     }
   } else if (so.type === 'whale') {
     const body = el('ellipse', { cx: -0.6, cy: 0, rx: 8.2, ry: 2.9, fill: '#3c4f5c' });
     const belly = el('ellipse', { cx: -0.6, cy: 0.3, rx: 6.6, ry: 1.5, fill: '#5b7583' });
     const tail = el('path', { d: 'M 7.4,0 Q 9.6,-2.6 11,-3.2 Q 9.6,0 11,3.2 Q 9.6,2.6 7.4,0 Z', fill: '#3c4f5c' });
     const blowhole = el('circle', { cx: -6.6, cy: 0, r: 0.5, fill: '#1f2a30' });
-    [body, tail, belly, blowhole].forEach(n => g.appendChild(n));
+    [body, tail, belly, blowhole].forEach(n => float.appendChild(n));
   }
   return g;
 }
@@ -629,25 +651,35 @@ function buildSeaObjectsLayer() {
 // Stessa logica delle mini-isole: rot:0 fisso già da ora (immagini fotorealistiche in
 // arrivo da Gemini, ruotarle sembrerebbe sbagliato) e supporto img/imgAspect pronto per
 // quando arrivano le immagini vere — placeholder procedurale (sagoma generica) nel
-// frattempo. ANIMAL_W = larghezza in unità locali quando c'è un'immagine vera.
-const ANIMAL_W = 8;
-const ANIMAL_IMG_ASPECT = 700 / 382;
+// frattempo. ANIMAL_SCALE = fattore di scala del <g> esterno (unico, uguale per
+// placeholder e immagine vera). ANIMAL_IMG_W = larghezza dell'immagine in unità locali,
+// pensata per dare una taglia finale comparabile al placeholder che sostituisce (corpo
+// rx:2.2 → diametro ~4.4).
+const ANIMAL_SCALE = 34;
+const ANIMAL_IMG_W = 4.6;
+const ANIMAL_IMG_ASPECT = 600 / 327;
 const ANIMALS: Array<{ gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }> = [
-  { gx: 150, gy: 380, rot: 0, size: 1.0, color: '#8a6a9c' },
-  { gx: -230, gy: 400, rot: 0, size: 0.85, color: '#4a7a6a' },
-  { gx: 330, gy: -260, rot: 0, size: 1.1, color: '#b06a4a' },
-  { gx: -330, gy: 20, rot: 0, size: 0.75, color: '#5a6a9c' },
-  { gx: -260, gy: -420, rot: 0, size: 0.95, color: '#9c7a4a' },
+  { gx: 150, gy: 380, rot: 0, size: 1.0, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
+  { gx: -230, gy: 400, rot: 0, size: 0.85, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
+  { gx: 330, gy: -260, rot: 0, size: 1.1, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
+  { gx: -330, gy: 20, rot: 0, size: 0.75, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
+  { gx: -260, gy: -420, rot: 0, size: 0.95, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
 ];
 function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }) {
   const p = proj(a.gx, a.gy);
-  const scale = (a.img ? ANIMAL_W : 34) * a.size;
+  const scale = ANIMAL_SCALE * a.size;
   const g = el('g', { class: 'animal', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${a.rot}) scale(${scale.toFixed(1)})` });
+  // stesso wrapper "float" degli oggetti del mare, per il galleggiamento via CSS.
+  const seed = Math.abs(a.gx * 11 + a.gy * 17) % 100;
+  const dur = (3.4 + (seed % 15) / 10).toFixed(2);
+  const delay = (-(seed % 23) / 10).toFixed(2);
+  const float = el('g', { class: 'animal-float', style: `animation-duration:${dur}s;animation-delay:${delay}s;` });
+  g.appendChild(float);
   if (a.img) {
-    const H = 1 / (a.imgAspect || ANIMAL_IMG_ASPECT);
-    const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: 0.26, ry: 0.08, fill: 'rgba(10,20,15,0.22)' });
-    const img = el('image', { href: a.img, x: -0.5, y: (-H / 2).toFixed(2), width: 1, height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
-    [shadow, img].forEach(n => g.appendChild(n));
+    const W = ANIMAL_IMG_W, H = W / (a.imgAspect || ANIMAL_IMG_ASPECT);
+    const shadow = el('ellipse', { cx: 0, cy: H * 0.46, rx: W * 0.26, ry: W * 0.08, fill: 'rgba(10,20,15,0.22)' });
+    const img = el('image', { href: a.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
+    [shadow, img].forEach(n => float.appendChild(n));
     return g;
   }
   // placeholder generico: corpo + coda + due "appendici" stravaganti + occhio, così da
@@ -658,7 +690,7 @@ function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; col
   const fin1 = el('path', { d: 'M -0.6,-1.1 Q -1.3,-2.2 -0.3,-2.4 Q 0.4,-1.6 -0.6,-1.1 Z', fill: a.color, opacity: 0.7 });
   const fin2 = el('path', { d: 'M -0.9,1.1 Q -1.9,1.7 -1.4,2.4 Q -0.4,2.0 -0.9,1.1 Z', fill: a.color, opacity: 0.7 });
   const eye = el('circle', { cx: -1.5, cy: -0.3, r: 0.22, fill: '#1f2a30' });
-  [shadow, body, tail, fin1, fin2, eye].forEach(n => g.appendChild(n));
+  [shadow, body, tail, fin1, fin2, eye].forEach(n => float.appendChild(n));
   return g;
 }
 function buildAnimalsLayer() {
@@ -976,6 +1008,25 @@ watch(() => props.houses, buildBoard, { deep: true });
    desaturati come le mini-isole — sono oggetti "in scena", a colori come le isole. */
 .sea-object{ pointer-events:none; }
 .animal{ pointer-events:none; }
+/* galleggiamento: piccolo bob verticale + rollio, per dare l'idea che animali e oggetti
+   siano in acqua (e non semplicemente "appoggiati"). Durata/ritardo per-istanza sono
+   impostati inline (vedi buildSeaObject/buildAnimal) così non ondeggiano in sincrono.
+   Unità: locali al <g> già scalato dal padre, quindi valori piccoli bastano. */
+.sea-object-float, .animal-float{
+  animation-name: floatBob;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+@keyframes floatBob{
+  0%   { transform: translate(0, 0)      rotate(0deg); }
+  25%  { transform: translate(0.02, -0.09) rotate(1.1deg); }
+  50%  { transform: translate(0, -0.14)   rotate(0deg); }
+  75%  { transform: translate(-0.02, -0.09) rotate(-1.1deg); }
+  100% { transform: translate(0, 0)      rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .sea-object-float, .animal-float{ animation:none; }
+}
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
