@@ -541,10 +541,14 @@ function buildMiniIslandsLayer() {
 // (stesso stile fotorealistico delle isole, vedi prompt fornito ad Andrea), ogni entry va
 // convertita in un <img>/foreignObject, stessa posizione — NON desaturate come le
 // mini-isole: questi sono oggetti "in scena", non texture di sfondo.
-const SEA_SCALE: Record<string, number> = { boat: 26.5, argo: 12.8, debris: 11, whale: 42.5 };
-// larghezza dell'immagine in unità locali (stessa scala delle vecchie sagome procedurali
-// che sostituisce — es. lo scafo della barca andava da -6.5 a 6.5 = 13 di larghezza), così
-// la taglia finale resta quella già scelta/verificata per tipo.
+// ATTENZIONE dimensioni: i valori qui sotto NON sono più quelli tarati sulle vecchie sagome
+// procedurali (quel giro dava oggetti larghi 2-7px a schermo — di fatto invisibili, bug
+// scoperto solo con uno zoom reale sullo screenshot, non dai soli bounding-box). Ritarati
+// per una taglia effettivamente visibile: boat/whale più in vista, argo/debris più piccoli
+// ma comunque leggibili come sagoma, non puntini.
+const SEA_SCALE: Record<string, number> = { boat: 72, argo: 100, debris: 95, whale: 70 };
+// larghezza dell'immagine in unità locali — invariata: è SEA_SCALE (sopra) che ora dà la
+// taglia finale visibile.
 const SEA_IMG_W: Record<string, number> = { boat: 13, argo: 5.5, debris: 4.5, whale: 19 };
 const SEA_IMG_ASPECT = 600 / 327;
 const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }> = [
@@ -626,7 +630,8 @@ function buildSeaObjectsLayer() {
 // placeholder e immagine vera). ANIMAL_IMG_W = larghezza dell'immagine in unità locali,
 // pensata per dare una taglia finale comparabile al placeholder che sostituisce (corpo
 // rx:2.2 → diametro ~4.4).
-const ANIMAL_SCALE = 34;
+// stesso discorso di SEA_SCALE sopra: 34 dava creature larghe 4-7px a schermo, invisibili.
+const ANIMAL_SCALE = 150;
 const ANIMAL_IMG_W = 4.6;
 const ANIMAL_IMG_ASPECT = 600 / 327;
 const ANIMALS: Array<{ gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }> = [
