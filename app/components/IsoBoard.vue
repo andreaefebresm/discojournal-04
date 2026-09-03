@@ -119,23 +119,11 @@ function createWalkerLayer() {
   const SKIN_TONES = ['#e8b58c', '#c98a5b', '#8d5a3c', '#f2c9a0'];
   const PANTS_TONES = ['#2e2e2e', '#d8d2c2', '#5b6b73', '#efe9d8'];
 
-  // Round 6: "sostituire alcuni degli omini a nuoto con altre cose che si trovano in mare"
-  // — barchette, boe Argo (oceanografiche), rifiuti/detriti, balene. Solo tra i SINGOLI
-  // (mai nei gruppi: un gruppo resta persone, ha senso solo per loro la meccanica di
-  // coesione/richiamo-al-centro) e restano minoranza — il mare resta popolato soprattutto
-  // di persone, queste sono un tocco in più qua e là.
-  const BOAT_COLORS = ['#7a4a2b', '#9c5a33', '#54606b', '#efe9d8', '#8b3a3a'];
-  const DEBRIS_KINDS = ['bottle', 'bag', 'crate'];
-  const KIND_WEIGHTS: Array<[string, number]> = [['person', 0.60], ['boat', 0.15], ['argo', 0.10], ['debris', 0.10], ['whale', 0.05]];
-  // scala relativa (moltiplica WALKER_SCALE): una balena vista dall'alto è molto più
-  // grande di una persona, una boa Argo più piccola di una barca, ecc.
-  const KIND_SCALE: Record<string, number> = { person: 1, boat: 1.55, argo: 0.75, debris: 0.65, whale: 2.5 };
-  function pickKind(): string {
-    const r = Math.random();
-    let acc = 0;
-    for (const [k, w] of KIND_WEIGHTS) { acc += w; if (r <= acc) return k; }
-    return 'person';
-  }
+  // Round 6 (superato): "sostituire alcuni degli omini a nuoto con altre cose che si
+  // trovano in mare" — barchette/boe/detriti/balene, prima fatte come pittogrammi SVG
+  // animati insieme agli omini. Round 7: quelle "altre cose" diventano immagini statiche
+  // nello stesso stile fotorealistico delle isole (non più animate, non più parte della
+  // simulazione omini/gruppi) — vedi SEA_OBJECTS più sotto. I walker restano SOLO persone.
 
   const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
   const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
@@ -243,11 +231,6 @@ function createWalkerLayer() {
           armLenA: 2.2 + Math.random() * 1.6,
           armLenB: 2.2 + Math.random() * 1.6,
           sitting: Math.random() < 0.22,    // ~1 su 5: posa raccolta/seduta invece che eretta
-          // "cosa" è questo walker: solo i singoli (g.size===1) possono essere altro che
-          // una persona — barca/boa/detrito/balena, vedi KIND_WEIGHTS più sopra.
-          kind: g.size === 1 ? pickKind() : 'person',
-          boatColor: BOAT_COLORS[(Math.random() * BOAT_COLORS.length) | 0],
-          debrisKind: DEBRIS_KINDS[(Math.random() * DEBRIS_KINDS.length) | 0],
         });
       }
     });
@@ -277,73 +260,24 @@ function createWalkerLayer() {
     const head = el('circle', { cx: 0, cy: (w.sitting ? -2.6 : -4.2), r: 1.7, fill: '#181818', opacity: op });
     [legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
   }
-  // piccola barca a remi/canoa vista dall'alto: scafo appuntito ai due capi + un banco
-  function buildBoatBody(w: any, op: string, g: SVGElement) {
-    const hull = el('path', {
-      d: 'M -6.5,0 Q -3.2,-2.3 0,-2.4 Q 3.2,-2.3 6.5,0 Q 3.2,2.3 0,2.4 Q -3.2,2.3 -6.5,0 Z',
-      fill: w.boatColor, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.3, opacity: op
-    });
-    const thwart = el('line', { x1: -1.8, y1: -1.6, x2: -1.8, y2: 1.6, stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.4, opacity: op });
-    const bow = el('circle', { cx: 5.6, cy: 0, r: 0.5, fill: 'rgba(20,20,15,0.35)', opacity: op });
-    [hull, thwart, bow].forEach(n => g.appendChild(n));
-  }
-  // boa oceanografica (tipo Argo): vista dall'alto è quasi solo il disco superiore +
-  // l'antenna che sporge, corpo bianco/panna con un anello arancione (alta visibilità)
-  function buildArgoBody(w: any, op: string, g: SVGElement) {
-    const body = el('circle', { cx: 0, cy: 0, r: 2.1, fill: '#efe9dc', stroke: '#d9622e', 'stroke-width': 0.6, opacity: op });
-    const cap = el('circle', { cx: 0, cy: 0, r: 0.7, fill: '#d9622e', opacity: op });
-    const antenna = el('line', { x1: 0, y1: 0, x2: 3.4, y2: -1.1, stroke: '#8a8578', 'stroke-width': 0.35, opacity: op });
-    [body, antenna, cap].forEach(n => g.appendChild(n));
-  }
-  // detrito/rifiuto: tre varianti minime — bottiglia, sacchetto, cassetta — sempre
-  // piccole e opache, mai al centro dell'attenzione
-  function buildDebrisBody(w: any, op: string, g: SVGElement) {
-    if (w.debrisKind === 'bottle') {
-      const body = el('ellipse', { cx: 0, cy: 0.3, rx: 1.1, ry: 2.6, fill: 'rgba(120,160,120,0.55)', stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.25, opacity: op });
-      const cap = el('circle', { cx: 0, cy: -2.3, r: 0.6, fill: 'rgba(70,90,70,0.7)', opacity: op });
-      [body, cap].forEach(n => g.appendChild(n));
-    } else if (w.debrisKind === 'bag') {
-      const bag = el('path', { d: 'M -2.6,-0.8 Q -1.2,-2.4 0.4,-1.6 Q 2.4,-1.8 2.2,0.4 Q 2.6,2.2 0.2,2.2 Q -2.2,2.4 -2.6,-0.8 Z', fill: 'rgba(230,230,225,0.4)', stroke: 'rgba(120,120,110,0.4)', 'stroke-width': 0.25, opacity: op });
-      g.appendChild(bag);
-    } else {
-      const crate = el('rect', { x: -2.2, y: -2.2, width: 4.4, height: 4.4, fill: 'rgba(139,90,43,0.65)', stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3, opacity: op });
-      const slat = el('line', { x1: -2.2, y1: 0, x2: 2.2, y2: 0, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3, opacity: op });
-      const slat2 = el('line', { x1: 0, y1: -2.2, x2: 0, y2: 2.2, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3, opacity: op });
-      [crate, slat, slat2].forEach(n => g.appendChild(n));
-    }
-  }
-  // balena vista dall'alto: corpo affusolato + coda a ventaglio + sfiatatoio
-  function buildWhaleBody(w: any, op: string, g: SVGElement) {
-    const body = el('ellipse', { cx: -0.6, cy: 0, rx: 8.2, ry: 2.9, fill: '#3c4f5c', opacity: op });
-    const belly = el('ellipse', { cx: -0.6, cy: 0.3, rx: 6.6, ry: 1.5, fill: '#5b7583', opacity: (parseFloat(op) * 0.8).toFixed(2) });
-    const tail = el('path', { d: 'M 7.4,0 Q 9.6,-2.6 11,-3.2 Q 9.6,0 11,3.2 Q 9.6,2.6 7.4,0 Z', fill: '#3c4f5c', opacity: op });
-    const blowhole = el('circle', { cx: -6.6, cy: 0, r: 0.5, fill: '#1f2a30', opacity: op });
-    [body, tail, belly, blowhole].forEach(n => g.appendChild(n));
-  }
-
-  // ---- pittogramma visto dall'alto. Per default una persona (vestito colorato, braccia
-  // color-pelle a due angoli fissi, testa nera sempre in cima); i SINGOLI possono invece
-  // essere barca/boa/detrito/balena (vedi w.kind, assegnato in initWalkers). Ferme di
-  // natura — nessuna animazione di gambe/braccia legata al movimento: la sola vita
-  // residua è il filo di respiro applicato in render() alla posizione dell'intero <g>.
+  // ---- pittogramma visto dall'alto: una persona (vestito colorato, braccia color-pelle a
+  // due angoli fissi, testa nera sempre in cima). Ferme di natura — nessuna animazione di
+  // gambe/braccia legata al movimento: la sola vita residua è il filo di respiro applicato
+  // in render() alla posizione dell'intero <g>. (Barche/boe/detriti/balene sono usciti da
+  // qui — ora sono oggetti statici a colori nello stile delle isole, vedi SEA_OBJECTS.)
   function buildPictogram(w: any) {
     const op = (0.75 + 0.25 * w.depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
     const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
     // ondine/schiuma: invisibili da fermi, compaiono e crescono con la velocità corrente
     // (w.curSpeed, impostata in step()) — vedi render(). Sotto il "corpo" nell'ordine di
-    // disegno, così sembrano intorno all'acqua smossa, non sopra. Valgono per ogni kind
-    // (barche/balene fanno scia come le persone che sguazzano).
+    // disegno, così sembrano intorno all'acqua smossa, non sopra.
     const wake = el('ellipse', { cx: 0, cy: 1.5, rx: 5, ry: 3.2, fill: 'none', stroke: 'rgba(244,248,255,0.75)', 'stroke-width': 1, opacity: 0 });
     const foamA = el('circle', { cx: -3, cy: 2.2, r: 0.6, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
     const foamB = el('circle', { cx: 3, cy: 1.8, r: 0.55, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
     const foamC = el('circle', { cx: 0, cy: 3.6, r: 0.5, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
     [shadow, wake, foamA, foamB, foamC].forEach(n => g.appendChild(n));
-    if (w.kind === 'boat') buildBoatBody(w, op, g);
-    else if (w.kind === 'argo') buildArgoBody(w, op, g);
-    else if (w.kind === 'debris') buildDebrisBody(w, op, g);
-    else if (w.kind === 'whale') buildWhaleBody(w, op, g);
-    else buildPersonBody(w, op, g);
+    buildPersonBody(w, op, g);
     return { g, shadow, wake, foamA, foamB, foamC };
   }
 
@@ -443,8 +377,7 @@ function createWalkerLayer() {
       // ondeggiare autonomo (stesso principio del respiro, ma sull'angolo) — un po' di
       // "vita" senza farli girare su loro stessi in modo innaturale.
       const rot = w.rot + Math.sin(simT * w.noiseFX * 0.6 + w.noiseAY) * 7;
-      const kscale = WALKER_SCALE * (KIND_SCALE[w.kind] || 1);
-      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${kscale.toFixed(1)})`);
+      w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${WALKER_SCALE})`);
 
       // ondine/schiuma: compaiono e crescono con la velocità corrente, invisibili da fermi.
       const spF = Math.min(1, (w.curSpeed || 0) / MAX_SPEED);
@@ -607,6 +540,69 @@ function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: nu
 function buildMiniIslandsLayer() {
   const g = el('g', { class: 'mini-island-layer' });
   MINI_ISLANDS.forEach(mi => g.appendChild(buildMiniIsland(mi)));
+  return g;
+}
+
+// ---- "oggettini" del mare (barche/boe Argo/detriti/balene): STATICI, non animati, non
+// cliccabili — al contrario degli omini restano fermi nella loro posizione, come le
+// isole/mini-isole. Anche qui, per ora, placeholder SVG (stessa sagoma usata nel round
+// precedente, quando erano ancora parte della simulazione omini): niente strumento di
+// generazione immagini disponibile in questa sessione. Quando arrivano le immagini vere
+// (stesso stile fotorealistico delle isole, vedi prompt fornito ad Andrea), ogni entry va
+// convertita in un <img>/foreignObject, stessa posizione — NON desaturate come le
+// mini-isole: questi sono oggetti "in scena", non texture di sfondo.
+const SEA_SCALE: Record<string, number> = { boat: 26.5, argo: 12.8, debris: 11, whale: 42.5 };
+const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string }> = [
+  { type: 'boat', gx: 300, gy: 350, rot: 15, color: '#7a4a2b' },
+  { type: 'boat', gx: -430, gy: 150, rot: -40, color: '#54606b' },
+  { type: 'argo', gx: 50, gy: 390, rot: 0 },
+  { type: 'argo', gx: 450, gy: -200, rot: 0 },
+  { type: 'debris', gx: -150, gy: 260, rot: 30, variant: 'bottle' },
+  { type: 'debris', gx: 0, gy: -150, rot: -20, variant: 'crate' },
+  { type: 'whale', gx: -90, gy: 440, rot: 25 },
+];
+function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number; color?: string; variant?: string }) {
+  const p = proj(so.gx, so.gy);
+  const scale = SEA_SCALE[so.type];
+  const g = el('g', { class: 'sea-object', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${so.rot}) scale(${scale})` });
+  const shadow = el('ellipse', { cx: 0, cy: 1.2, rx: so.type === 'whale' ? 9 : 4, ry: so.type === 'whale' ? 3.4 : 2, fill: 'rgba(10,30,35,0.18)' });
+  g.appendChild(shadow);
+  if (so.type === 'boat') {
+    const hull = el('path', { d: 'M -6.5,0 Q -3.2,-2.3 0,-2.4 Q 3.2,-2.3 6.5,0 Q 3.2,2.3 0,2.4 Q -3.2,2.3 -6.5,0 Z', fill: so.color, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.3 });
+    const thwart = el('line', { x1: -1.8, y1: -1.6, x2: -1.8, y2: 1.6, stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.4 });
+    const bow = el('circle', { cx: 5.6, cy: 0, r: 0.5, fill: 'rgba(20,20,15,0.35)' });
+    [hull, thwart, bow].forEach(n => g.appendChild(n));
+  } else if (so.type === 'argo') {
+    const body = el('circle', { cx: 0, cy: 0, r: 2.1, fill: '#efe9dc', stroke: '#d9622e', 'stroke-width': 0.6 });
+    const cap = el('circle', { cx: 0, cy: 0, r: 0.7, fill: '#d9622e' });
+    const antenna = el('line', { x1: 0, y1: 0, x2: 3.4, y2: -1.1, stroke: '#8a8578', 'stroke-width': 0.35 });
+    [body, antenna, cap].forEach(n => g.appendChild(n));
+  } else if (so.type === 'debris') {
+    if (so.variant === 'bottle') {
+      const body = el('ellipse', { cx: 0, cy: 0.3, rx: 1.1, ry: 2.6, fill: 'rgba(120,160,120,0.75)', stroke: 'rgba(20,20,15,0.3)', 'stroke-width': 0.25 });
+      const cap = el('circle', { cx: 0, cy: -2.3, r: 0.6, fill: 'rgba(70,90,70,0.85)' });
+      [body, cap].forEach(n => g.appendChild(n));
+    } else if (so.variant === 'bag') {
+      const bag = el('path', { d: 'M -2.6,-0.8 Q -1.2,-2.4 0.4,-1.6 Q 2.4,-1.8 2.2,0.4 Q 2.6,2.2 0.2,2.2 Q -2.2,2.4 -2.6,-0.8 Z', fill: 'rgba(230,230,225,0.6)', stroke: 'rgba(120,120,110,0.4)', 'stroke-width': 0.25 });
+      g.appendChild(bag);
+    } else {
+      const crate = el('rect', { x: -2.2, y: -2.2, width: 4.4, height: 4.4, fill: 'rgba(139,90,43,0.85)', stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3 });
+      const slat = el('line', { x1: -2.2, y1: 0, x2: 2.2, y2: 0, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3 });
+      const slat2 = el('line', { x1: 0, y1: -2.2, x2: 0, y2: 2.2, stroke: 'rgba(60,35,15,0.5)', 'stroke-width': 0.3 });
+      [crate, slat, slat2].forEach(n => g.appendChild(n));
+    }
+  } else if (so.type === 'whale') {
+    const body = el('ellipse', { cx: -0.6, cy: 0, rx: 8.2, ry: 2.9, fill: '#3c4f5c' });
+    const belly = el('ellipse', { cx: -0.6, cy: 0.3, rx: 6.6, ry: 1.5, fill: '#5b7583' });
+    const tail = el('path', { d: 'M 7.4,0 Q 9.6,-2.6 11,-3.2 Q 9.6,0 11,3.2 Q 9.6,2.6 7.4,0 Z', fill: '#3c4f5c' });
+    const blowhole = el('circle', { cx: -6.6, cy: 0, r: 0.5, fill: '#1f2a30' });
+    [body, tail, belly, blowhole].forEach(n => g.appendChild(n));
+  }
+  return g;
+}
+function buildSeaObjectsLayer() {
+  const g = el('g', { class: 'sea-object-layer' });
+  SEA_OBJECTS.forEach(so => g.appendChild(buildSeaObject(so)));
   return g;
 }
 
@@ -819,6 +815,10 @@ function buildBoard() {
   // che restano sempre l'elemento più in primo piano della board.
   svg.appendChild(buildMiniIslandsLayer());
 
+  // ---- "oggettini" del mare (barche/boe/detriti/balene): statici, non cliccabili — vedi
+  // buildSeaObjectsLayer più sopra.
+  svg.appendChild(buildSeaObjectsLayer());
+
   // ---- isole: PNG con terreno/nature/edifici già inclusi, appoggiate direttamente sul mare.
   props.houses.forEach(hs => {
     const corners = plotCorners(hs);
@@ -906,6 +906,10 @@ watch(() => props.houses, buildBoard, { deep: true });
    pointer-events:none — per sicurezza, anche se non hanno già nessun bottone/handler: non
    devono MAI intercettare hover/click destinati al mare/agli omini sotto. */
 .mini-island{ filter:grayscale(1) brightness(0.94) contrast(1.05); opacity:0.82; pointer-events:none; }
+
+/* "oggettini" del mare (barche/boe/detriti/balene): statici, non cliccabili, ma NON
+   desaturati come le mini-isole — sono oggetti "in scena", a colori come le isole. */
+.sea-object{ pointer-events:none; }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
 .house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
