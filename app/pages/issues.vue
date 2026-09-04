@@ -6,7 +6,7 @@
     <div v-else-if="issues && issues.length" class="issue-grid">
       <component :is="iss.url ? 'a' : 'div'" v-for="iss in issues" :key="iss.number" :href="iss.url || undefined" :target="iss.url ? '_blank' : undefined" :rel="iss.url ? 'noopener' : undefined" class="issue-card" :class="{ disabled: !iss.url }">
         <div class="issue-shot">
-          <img v-if="iss.image" :src="iss.image.url" :alt="iss.title" loading="lazy" />
+          <img v-if="iss.image" :src="ctfImg(iss.image.url, { w: 500 })" :alt="iss.title" loading="lazy" decoding="async" />
           <div v-else class="issue-shot-placeholder">Copertina in arrivo</div>
           <span v-if="!iss.url" class="issue-soon">presto disponibile</span>
         </div>
