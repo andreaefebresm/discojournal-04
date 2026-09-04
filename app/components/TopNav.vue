@@ -49,7 +49,7 @@
 }
 .logo-link{ all: unset; cursor: pointer; display: block; border-radius: 50%; }
 .logo{
-  height:32px; width:32px; border-radius:50%; display:block;
+  height:3rem; width:3rem; border-radius:50%; display:block;
   filter: drop-shadow(0 2px 6px rgba(10,25,35,0.35));
   transition: transform 0.2s cubic-bezier(.2,.8,.2,1);
 }
