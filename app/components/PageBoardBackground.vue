@@ -1,6 +1,6 @@
 <template>
   <div class="bg-board" aria-hidden="true">
-    <IsoBoard v-if="houses && houses.length" :houses="houses" :grid-bounds="GRID_BOUNDS" />
+    <IsoBoard v-if="houses && houses.length" :houses="houses" :grid-bounds="GRID_BOUNDS" hide-main-islands />
   </div>
 </template>
 
@@ -9,6 +9,8 @@
 // home, non interattiva (pointer-events:none, nessun handler @select) e a opacità ridotta
 // — "sfondo simile a quello della home, meno carico", richiesto esplicitamente. Fixed a
 // tutto schermo, dietro il contenuto (z-index:0; l'<article> della pagina va a z-index:1).
+// hide-main-islands: "non voglio le isole, ma solo il mare" — nasconde le 5 isole grandi
+// cliccabili e i loro gradini d'acqua, lascia mare/mosaico + mini-isole/oggetti/animali.
 import { GRID_BOUNDS } from '../data/islandLayout';
 
 const { data: houses } = await useFetch('/api/houses');
