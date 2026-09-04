@@ -1,7 +1,7 @@
 <template>
   <nav class="topbar">
     <NuxtLink to="/" class="logo-link" aria-label="DiSCo Journal — torna al tabellone">
-      <img class="logo" src="/assets/logo-placeholder.png" alt="logo (placeholder)" />
+      <img class="logo" src="/assets/logo-placeholder.png" alt="DiSCo Journal" />
     </NuxtLink>
     <div class="navlinks">
       <NuxtLink to="/issues" class="navitem" aria-label="Issues — numeri precedenti">
