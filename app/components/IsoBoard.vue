@@ -1,5 +1,5 @@
 <template>
-  <div class="board-root">
+  <div class="board-root" :class="{ 'hide-main-islands': props.hideMainIslands }">
     <div class="board-wrap">
       <svg ref="svgEl" id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
@@ -12,7 +12,7 @@
         :aria-label="`Isola 0${hs.number} — ${hs.title} — apri articolo`"
         @click="$emit('select', hs)"
       >
-        <img :src="hs.image?.url" :alt="`${hs.title}, isola 0${hs.number}`" loading="lazy" />
+        <img :src="ctfImg(hs.image?.url, { w: 700 })" :alt="`${hs.title}, isola 0${hs.number}`" loading="lazy" decoding="async" />
         <div class="caption">{{ hs.title }}</div>
       </button>
     </div>
@@ -34,6 +34,11 @@ const props = defineProps<{
     gx0: number; gy0: number; cols: number; rows: number;
   }>;
   gridBounds: { gxMin: number; gxMax: number; gyMin: number; gyMax: number };
+  // Sfondo decorativo di About/Issues (PageBoardBackground): nasconde le 5 isole grandi
+  // cliccabili e i loro "gradini" d'acqua bassa, lasciando solo mare/mosaico, mini-isole,
+  // oggetti, animali e omini — "solo il mare", richiesto esplicitamente. Diverso dalla
+  // regola mobile qui sotto (quella è solo <=760px, questa vale sempre quando passata true).
+  hideMainIslands?: boolean;
 }>();
 
 const emit = defineEmits<{ select: [house: any] }>();
@@ -572,14 +577,19 @@ const SEA_SCALE: Record<string, number> = { boat: 144, argo: 200, debris: 190, w
 // taglia finale visibile.
 const SEA_IMG_W: Record<string, number> = { boat: 13, argo: 5.5, debris: 4.5, whale: 19 };
 const SEA_IMG_ASPECT = 600 / 327;
+// posizioni riviste ("più distanti tra loro e dalle isole grosse", richiesto dopo il
+// raddoppio della taglia): stesso metodo delle mini-isole, spinte verso l'esterno
+// dal centro dell'arcipelago (di più quanto più erano vicine al bordo di un'isola
+// grande) più uno scarto minimo tra loro di ~105 unità di griglia — vedi script di
+// supporto usato per calcolarle, non incluso nel progetto.
 const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }> = [
-  { type: 'boat', gx: 300, gy: 350, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
-  { type: 'boat', gx: -430, gy: 150, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
-  { type: 'argo', gx: 50, gy: 390, rot: 0, img: '/assets/sea-objects/argo1.png' },
-  { type: 'argo', gx: 450, gy: -200, rot: 0, img: '/assets/sea-objects/argo2.png' },
-  { type: 'debris', gx: -150, gy: 260, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
-  { type: 'debris', gx: 0, gy: -150, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
-  { type: 'whale', gx: -90, gy: 440, rot: 25, img: '/assets/sea-objects/whale.png' },
+  { type: 'boat', gx: 313, gy: 365, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
+  { type: 'boat', gx: -470, gy: 166, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
+  { type: 'argo', gx: 55, gy: 420, rot: 0, img: '/assets/sea-objects/argo1.png' },
+  { type: 'argo', gx: 469, gy: -207, rot: 0, img: '/assets/sea-objects/argo2.png' },
+  { type: 'debris', gx: -172, gy: 306, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
+  { type: 'debris', gx: 4, gy: -180, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
+  { type: 'whale', gx: -93, gy: 460, rot: 25, img: '/assets/sea-objects/whale.png' },
 ];
 function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }) {
   const p = proj(so.gx, so.gy);
@@ -659,17 +669,19 @@ const ANIMAL_IMG_W = 4.6;
 const ANIMAL_IMG_ASPECT = 600 / 327;
 // raddoppiati (ogni specie compare 2 volte, posizioni diverse) e più sparsi in acqua aperta
 // — richiesto esplicitamente ("fanne il doppio... falli più sparsi").
+// stessa revisione di posizioni di SEA_OBJECTS sopra ("più distanti tra loro e dalle
+// isole grosse") — vedi commento lì.
 const ANIMALS: Array<{ gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }> = [
-  { gx: 150, gy: 380, rot: 0, size: 1.0, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
-  { gx: -230, gy: 400, rot: 0, size: 0.85, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
-  { gx: 330, gy: -260, rot: 0, size: 1.1, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
-  { gx: -330, gy: 20, rot: 0, size: 0.75, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
-  { gx: -260, gy: -420, rot: 0, size: 0.95, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
-  { gx: 480, gy: 70, rot: 0, size: 1.05, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
-  { gx: -480, gy: -190, rot: 0, size: 0.9, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
-  { gx: 160, gy: 480, rot: 0, size: 1.15, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
-  { gx: 480, gy: 360, rot: 0, size: 0.8, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
-  { gx: -140, gy: -480, rot: 0, size: 1.0, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
+  { gx: 163, gy: 395, rot: 0, size: 1.0, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
+  { gx: -239, gy: 418, rot: 0, size: 0.85, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
+  { gx: 346, gy: -271, rot: 0, size: 1.1, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
+  { gx: -361, gy: 24, rot: 0, size: 0.75, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
+  { gx: -270, gy: -437, rot: 0, size: 0.95, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
+  { gx: 536, gy: 80, rot: 0, size: 1.05, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
+  { gx: -505, gy: -199, rot: 0, size: 0.9, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
+  { gx: 167, gy: 500, rot: 0, size: 1.15, color: '#b06a4a', img: '/assets/animals/anglerfish.png' },
+  { gx: 496, gy: 372, rot: 0, size: 0.8, color: '#5a6a9c', img: '/assets/animals/axolotl.png' },
+  { gx: -145, gy: -499, rot: 0, size: 1.0, color: '#9c7a4a', img: '/assets/animals/butterflyfish.png' },
 ];
 function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }) {
   const p = proj(a.gx, a.gy);
@@ -940,7 +952,9 @@ function buildBoard() {
     const card = document.createElementNS(XHTMLNS, 'div');
     card.setAttribute('class', 'card');
     const img = document.createElementNS(XHTMLNS, 'img');
-    img.setAttribute('src', hs.image?.url || '');
+    // Contentful Images API (?w=...&fm=webp): sui desktop board ogni isola è visibile
+    // contemporaneamente — 700px è già abbondante alla taglia con cui è disegnata qui.
+    img.setAttribute('src', ctfImg(hs.image?.url, { w: 700 }) || '');
     img.setAttribute('alt', `${hs.title}, isola 0${hs.number}`);
     // niente loading="lazy": dentro un <foreignObject> di un SVG con overflow:hidden
     // l'euristica di lazy-load può non caricare mai l'immagine (bug già documentato).
@@ -1066,6 +1080,10 @@ watch(() => props.houses, buildBoard, { deep: true });
 .house-hover .house-frame{ transform: translateY(-4%) scale(1.05); }
 
 .list{ display:none; }
+/* "solo il mare" per lo sfondo di About/Issues — a differenza della regola mobile qui
+   sotto (solo <=760px), questa si applica sempre quando IsoBoard riceve hideMainIslands. */
+.board-root.hide-main-islands .main-island,
+.board-root.hide-main-islands .main-island-steps{ display:none; }
 @media (max-width: 760px){
   /* la board isometrica resta MONTATA anche in mobile — non più "display:none" — così lo
      sfondo è la stessa scena del desktop (mare/mosaico, mini-isole, animali, oggetti,
