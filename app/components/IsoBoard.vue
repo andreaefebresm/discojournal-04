@@ -500,17 +500,22 @@ const MINI_ISLAND_SCALE = 260;
 // placeholder procedurali. rot:0 su tutte (foto fotorealistiche, non poligoni astratti:
 // ruotarle sembra sbagliato, come da richiesta). imgAspect solo dove diverso dal formato
 // standard ~700x382 usato dalla maggior parte delle immagini.
+// posizioni rimescolate ("cambiare la posizione alle isolette", richiesto): stesso
+// metodo di prima (fuori dal riquadro di ogni isola grande, con margine, più uno scarto
+// minimo tra tutti gli elementi decorativi — isolette E oggetti insieme, stesso pool di
+// spaziatura) ma disposizione nuova, non solo "più spostata" — vedi script di supporto
+// usato per generarle, non incluso nel progetto.
 const MINI_ISLANDS: Array<{ gx: number; gy: number; variant: number; size: number; rot: number; img?: string; imgAspect?: number }> = [
-  { gx: -300, gy: 300, variant: 0, size: 1.0, rot: 0, img: '/assets/mini-islands/reef.png' },
-  { gx: 380, gy: 250, variant: 2, size: 0.85, rot: 0, img: '/assets/mini-islands/volcano.png', imgAspect: 700 / 284 },
-  { gx: -230, gy: -330, variant: 1, size: 1.1, rot: 0, img: '/assets/mini-islands/driftwood.png' },
-  { gx: 250, gy: -330, variant: 3, size: 0.9, rot: 0, img: '/assets/mini-islands/saltflat.png' },
-  { gx: -60, gy: -40, variant: 2, size: 0.8, rot: 0, img: '/assets/mini-islands/mossyboulders.png' },
-  { gx: 100, gy: -20, variant: 0, size: 0.7, rot: 0, img: '/assets/mini-islands/mesa.png' },
-  { gx: -450, gy: -50, variant: 1, size: 1.15, rot: 0, img: '/assets/mini-islands/tidepools.png' },
-  { gx: -100, gy: 360, variant: 3, size: 0.95, rot: 0, img: '/assets/mini-islands/mangrove.png' },
-  { gx: 200, gy: -360, variant: 0, size: 0.8, rot: 0, img: '/assets/mini-islands/dunegrass.png', imgAspect: 1 },
-  { gx: -250, gy: -20, variant: 2, size: 1.0, rot: 0, img: '/assets/mini-islands/icefloe.png' },
+  { gx: 156, gy: -475, variant: 0, size: 1.0, rot: 0, img: '/assets/mini-islands/reef.png' },
+  { gx: 439, gy: -413, variant: 2, size: 0.85, rot: 0, img: '/assets/mini-islands/volcano.png', imgAspect: 700 / 284 },
+  { gx: -87, gy: -470, variant: 1, size: 1.1, rot: 0, img: '/assets/mini-islands/driftwood.png' },
+  { gx: -315, gy: 5, variant: 3, size: 0.9, rot: 0, img: '/assets/mini-islands/saltflat.png' },
+  { gx: -530, gy: -301, variant: 2, size: 0.8, rot: 0, img: '/assets/mini-islands/mossyboulders.png' },
+  { gx: 168, gy: 45, variant: 0, size: 0.7, rot: 0, img: '/assets/mini-islands/mesa.png' },
+  { gx: 343, gy: 198, variant: 1, size: 1.15, rot: 0, img: '/assets/mini-islands/tidepools.png' },
+  { gx: -179, gy: -345, variant: 3, size: 0.95, rot: 0, img: '/assets/mini-islands/mangrove.png' },
+  { gx: 512, gy: -163, variant: 0, size: 0.8, rot: 0, img: '/assets/mini-islands/dunegrass.png', imgAspect: 1 },
+  { gx: 41, gy: 473, variant: 2, size: 1.0, rot: 0, img: '/assets/mini-islands/icefloe.png' },
 ];
 // 4 "varianti" di sagoma (poligono irregolare con raggio diverso per vertice), per un
 // po' di diversità di forma senza dover disegnare 10 pittogrammi a mano.
@@ -577,19 +582,17 @@ const SEA_SCALE: Record<string, number> = { boat: 144, argo: 200, debris: 190, w
 // taglia finale visibile.
 const SEA_IMG_W: Record<string, number> = { boat: 13, argo: 5.5, debris: 4.5, whale: 19 };
 const SEA_IMG_ASPECT = 600 / 327;
-// posizioni riviste ("più distanti tra loro e dalle isole grosse", richiesto dopo il
-// raddoppio della taglia): stesso metodo delle mini-isole, spinte verso l'esterno
-// dal centro dell'arcipelago (di più quanto più erano vicine al bordo di un'isola
-// grande) più uno scarto minimo tra loro di ~105 unità di griglia — vedi script di
-// supporto usato per calcolarle, non incluso nel progetto.
+// posizioni rimescolate — stessa revisione di MINI_ISLANDS sopra, vedi commento lì
+// (isolette e oggetti condividono lo stesso pool di spaziatura, quindi vanno rilette
+// insieme, non separatamente).
 const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }> = [
-  { type: 'boat', gx: 313, gy: 365, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
-  { type: 'boat', gx: -470, gy: 166, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
-  { type: 'argo', gx: 55, gy: 420, rot: 0, img: '/assets/sea-objects/argo1.png' },
-  { type: 'argo', gx: 469, gy: -207, rot: 0, img: '/assets/sea-objects/argo2.png' },
-  { type: 'debris', gx: -172, gy: 306, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
-  { type: 'debris', gx: 4, gy: -180, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
-  { type: 'whale', gx: -93, gy: 460, rot: 25, img: '/assets/sea-objects/whale.png' },
+  { type: 'boat', gx: 152, gy: -135, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
+  { type: 'boat', gx: -261, gy: 437, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
+  { type: 'argo', gx: 548, gy: 140, rot: 0, img: '/assets/sea-objects/argo1.png' },
+  { type: 'argo', gx: -303, gy: -468, rot: 0, img: '/assets/sea-objects/argo2.png' },
+  { type: 'debris', gx: 557, gy: 10, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
+  { type: 'debris', gx: -458, gy: -453, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
+  { type: 'whale', gx: -489, gy: -118, rot: 25, img: '/assets/sea-objects/whale.png' },
 ];
 function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }) {
   const p = proj(so.gx, so.gy);
