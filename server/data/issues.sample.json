@@ -2,19 +2,19 @@
   {
     "number": 3,
     "title": "Issue 3",
-    "image": null,
+    "image": { "url": "/assets/issues/issue3.png", "width": 3102, "height": 1884 },
     "url": null
   },
   {
     "number": 2,
     "title": "Issue 2",
-    "image": null,
-    "url": null
+    "image": { "url": "/assets/issues/issue2.png", "width": 3102, "height": 1884 },
+    "url": "https://discojournal.github.io/archive/"
   },
   {
     "number": 1,
     "title": "Issue 1",
-    "image": null,
-    "url": null
+    "image": { "url": "/assets/issues/issue1.png", "width": 3102, "height": 1884 },
+    "url": "https://discojournal.github.io/archive/index.html?p=228.html"
   }
 ]
