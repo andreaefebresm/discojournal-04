@@ -49,7 +49,7 @@
 }
 .logo-link{ all: unset; cursor: pointer; display: block; border-radius: 50%; }
 .logo{
-  height:4rem; width:4rem; border-radius:50%; display:block;
+  height:5rem; width:5rem; border-radius:50%; display:block;
   filter: drop-shadow(0 2px 6px rgba(10,25,35,0.35));
   transition: transform 0.2s cubic-bezier(.2,.8,.2,1);
 }
@@ -71,7 +71,7 @@
   filter: drop-shadow(0 6px 12px rgba(10,25,35,0.4));
 }
 .navlinks .navitem span{
-  font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-size:13px;
   font-weight:600;
   letter-spacing:.04em;

@@ -69,6 +69,12 @@ const svgEl = ref<SVGSVGElement | null>(null);
 const GX_X = 26, GX_Y = 6.0;   // asse gx: ~12.9° (tan⁻¹(6/26))
 const GY_X = 26, GY_Y = 12.23; // asse gy: ~25.2° (tan⁻¹(12.23/26))
 
+// diametro (in unità SVG) della "macchia" di deformazione che segue il cursore sul mare —
+// usato sia per costruire la feImage sorgente (buildBoard) sia per posizionarla ad ogni
+// pointermove (updatePointerRipple, dentro createWalkerLayer): livello di modulo perché
+// serve a entrambe le funzioni.
+const POINTER_RIPPLE_SIZE = 340;
+
 function proj(gx: number, gy: number) { return { x: gx * GX_X - gy * GY_X, y: gx * GX_Y + gy * GY_Y }; }
 // inversa di proj(): serve per capire, dato un rettangolo in pixel (il contenitore
 // reale), quale intervallo di gx/gy serve perché il mare copra l'intero viewBox.
@@ -299,6 +305,35 @@ function createWalkerLayer() {
     return invProj(p.x, p.y);
   }
 
+  // sposta la <feImage> #pointerRippleImg (vedi handWobbleSVG) sul punto del mare sotto il
+  // cursore — coordinate SVG "grezze" (stesso spazio del rect del mare), non quelle di griglia
+  // usate da screenToGrid/pointerGrid. Nota: usiamo una feImage con sorgente data-URI (raster),
+  // NON un riferimento a un elemento locale (es. <feImage href="#id">) — quest'ultima tecnica
+  // non viene renderizzata in modo affidabile da Chromium quando l'elemento sorgente vive dentro
+  // <defs>, verificato empiricamente (nessuna deformazione visibile nonostante nessun errore in
+  // console). La feImage con data-URI è invece un riferimento a un'immagine esterna vera e
+  // propria, supportato ovunque. Ricerca il nodo ad ogni chiamata invece di tenerne un
+  // riferimento: i <defs> vengono ricreati a ogni buildBoard(), un riferimento salvato
+  // diventerebbe stale al primo rebuild (resize, nuove isole, ecc.).
+  function updatePointerRipple(clientX: number, clientY: number) {
+    if (!mountedSvg) return;
+    const img = mountedSvg.querySelector('#pointerRippleImg');
+    if (!img) return;
+    const pt = mountedSvg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const ctm = mountedSvg.getScreenCTM();
+    if (!ctm) return;
+    const p = pt.matrixTransform(ctm.inverse());
+    const half = POINTER_RIPPLE_SIZE / 2;
+    img.setAttribute('x', (p.x - half).toFixed(1));
+    img.setAttribute('y', (p.y - half).toFixed(1));
+  }
+  function hidePointerRipple() {
+    if (!mountedSvg) return;
+    const img = mountedSvg.querySelector('#pointerRippleImg');
+    if (img) { img.setAttribute('x', '-99999'); img.setAttribute('y', '-99999'); }
+  }
+
   function step(dt: number) {
     simT += dt;
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
@@ -339,12 +374,18 @@ function createWalkerLayer() {
         const f = Math.min(dg, 40) * COHESION_STRENGTH * dt * 0.1;
         w.vx += dxg / dg * f; w.vy += dyg / dg * f;
       }
-      // repulsione dal mouse — mai afferrabili, solo si scostano (ora molto più marcata)
+      // repulsione dal mouse — mai afferrabili, solo si scostano (ora molto più marcata).
+      // "più veloci in hover": oltre alla spinta, si alza anche il tetto di velocità qui
+      // sotto (vedi speedCap) così lo scatto resta visibile invece di essere subito
+      // riassorbito dal clamp a MAX_SPEED fisso.
+      let pointerBoost = 0;
       if (pointerGrid) {
         const dx = w.gx - pointerGrid.gx, dy = w.gy - pointerGrid.gy, d = Math.hypot(dx, dy);
         if (d < REPEL_RADIUS && d > 0.001) {
-          const f = (1 - d / REPEL_RADIUS) * REPEL_STRENGTH * dt;
+          const closeness = 1 - d / REPEL_RADIUS;
+          const f = closeness * REPEL_STRENGTH * dt;
           w.vx += dx / d * f; w.vy += dy / d * f;
+          pointerBoost = closeness;
         }
       }
       // separazione dagli altri omini dello STESSO gruppo, raggio corto: si stringono
@@ -360,7 +401,10 @@ function createWalkerLayer() {
 
       w.vx *= 0.92; w.vy *= 0.92;
       const sp = Math.hypot(w.vx, w.vy);
-      if (sp > MAX_SPEED) { w.vx = w.vx / sp * MAX_SPEED; w.vy = w.vy / sp * MAX_SPEED; }
+      // tetto di velocità alzato fino a ~3x vicino al mouse (pointerBoost 0→1), così la
+      // fuga in hover si vede davvero e non solo come uno scarto smorzato subito.
+      const speedCap = MAX_SPEED * (1 + pointerBoost * 2);
+      if (sp > speedCap) { w.vx = w.vx / sp * speedCap; w.vy = w.vy / sp * speedCap; }
       // velocità corrente memorizzata (dopo il clamp): usata in render() per far comparire
       // ondine/schiuma intorno a chi si sta muovendo — vedi buildPictogram/render.
       w.curSpeed = Math.hypot(w.vx, w.vy);
@@ -425,8 +469,11 @@ function createWalkerLayer() {
       svg.appendChild(layer);
       if (!started) {
         started = true;
-        svg.addEventListener('pointermove', (e: PointerEvent) => { pointerGrid = screenToGrid(e.clientX, e.clientY); });
-        svg.addEventListener('pointerleave', () => { pointerGrid = null; });
+        svg.addEventListener('pointermove', (e: PointerEvent) => {
+          pointerGrid = screenToGrid(e.clientX, e.clientY);
+          updatePointerRipple(e.clientX, e.clientY);
+        });
+        svg.addEventListener('pointerleave', () => { pointerGrid = null; hidePointerRipple(); });
         requestAnimationFrame(tick);
       }
     }
@@ -805,17 +852,39 @@ function buildBoard() {
     <pattern id="mosaicShallow" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
       ${mosaicTilesSVG(MOSAIC_SUB, '#8aa3d6', '#7590c6', [[1, 0], [2, 3]], '#f7faff', 2.6)}
     </pattern>`;
-  // "seaWobble": due passaggi in catena. Il primo (statico, seed fisso) è il vecchio wobble
+  // "seaWobble": tre passaggi in catena. Il primo (statico, seed fisso) è il vecchio wobble
   // "dipinto a mano" — le linee non sono perfettamente rette come il resto della board (case/
   // isole restano nitide, solo il mare "respira"). Il secondo è un'onda vera: stessa idea ma
   // con la "scale" di feDisplacementMap animata via <animate> SMIL (nessun JS extra), così la
   // griglia/grout più spessa ondeggia lentamente avanti e indietro come schiuma sull'acqua.
+  // Il terzo ("il cursore deforma la griglia", richiesto) è una mappa di spostamento LOCALE:
+  // una <feImage> con una sfumatura radiale come sorgente, la cui posizione (x/y) viene
+  // aggiornata via JS a ogni pointermove (vedi updatePointerRipple più sotto) — dove la
+  // sfumatura è "accesa" la griglia si piega, altrove (trasparente) resta come prima. Nessun
+  // ricalcolo del pattern: solo x/y della feImage cambiano, il resto lo fa la GPU via
+  // feDisplacementMap. NB: la sorgente è una vera immagine esterna (data-URI SVG), non un
+  // riferimento a un elemento locale (<feImage href="#id">) — quella tecnica, provata prima,
+  // non viene renderizzata in modo affidabile da Chromium quando l'elemento sorgente vive
+  // dentro <defs> (nessun errore in console, ma nessuna deformazione visibile).
+  const pointerRippleSrc = encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${POINTER_RIPPLE_SIZE}" height="${POINTER_RIPPLE_SIZE}">
+      <defs><radialGradient id="g">
+        <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+        <stop offset="60%" stop-color="#fff" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient></defs>
+      <circle cx="${POINTER_RIPPLE_SIZE / 2}" cy="${POINTER_RIPPLE_SIZE / 2}" r="${POINTER_RIPPLE_SIZE / 2}" fill="url(#g)"/>
+    </svg>`
+  );
   const handWobbleSVG = `
-    <filter id="seaWobble" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="seaWobble" x="-20%" y="-20%" width="140%" height="140%">
       <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="7" result="handN"/>
       <feDisplacementMap in="SourceGraphic" in2="handN" scale="55" xChannelSelector="R" yChannelSelector="G" result="handWobbled"/>
       <feTurbulence type="fractalNoise" baseFrequency="0.020" numOctaves="2" seed="21" result="waveN"/>
-      <feDisplacementMap id="waveDisp" in="handWobbled" in2="waveN" scale="28" xChannelSelector="R" yChannelSelector="G"/>
+      <feDisplacementMap id="waveDisp" in="handWobbled" in2="waveN" scale="28" xChannelSelector="R" yChannelSelector="G" result="waved"/>
+      <feImage id="pointerRippleImg" x="-99999" y="-99999" width="${POINTER_RIPPLE_SIZE}" height="${POINTER_RIPPLE_SIZE}" href="data:image/svg+xml,${pointerRippleSrc}" result="pointerDot"/>
+      <feGaussianBlur in="pointerDot" stdDeviation="10" result="pointerBlur"/>
+      <feDisplacementMap in="waved" in2="pointerBlur" scale="90" xChannelSelector="R" yChannelSelector="R"/>
     </filter>`;
   // grana animata: un feOffset tra la turbolenza e il color-matrix, con dx/dy che
   // "camminano" lentamente via <animate> SMIL nativo (nessun JS extra, nessun ricalcolo
@@ -1060,7 +1129,7 @@ watch(() => props.houses, buildBoard, { deep: true });
 }
 
 .house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
-.house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transform-origin:50% 100%; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
 .house-btn:hover .house-frame, .house-btn:focus-visible .house-frame{ transform: translateY(-4%) scale(1.05); }
 .house-frame .card{
   width:100%; display:block;
@@ -1080,20 +1149,33 @@ watch(() => props.houses, buildBoard, { deep: true });
   /* isole = PNG a sfondo trasparente: ombra portata che segue la sagoma, le fa leggere
      come oggetti che galleggiano sul mare (non un box-shadow rettangolare) */
   filter: drop-shadow(0 14px 18px rgba(5,20,25,0.45));
+  transition: filter .35s ease;
+}
+/* in hover su un'isola, le altre si fanno più piccole e b/n — così l'isola sotto il mouse
+   "salta fuori" dal resto del tabellone invece di restare tutte allo stesso piano visivo. */
+.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame{
+  transform: scale(0.8);
+}
+.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame img{
+  filter: grayscale(1) drop-shadow(0 14px 18px rgba(5,20,25,0.45));
+}
+.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-cap{
+  opacity:.5;
 }
 
-.house-badge{ font-family:"Inter",-apple-system,sans-serif; fill:#efe9d8; }
+.house-badge{ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; fill:#efe9d8; }
 /* didascalia SEMPRE visibile sotto ogni isola (prima appariva solo in hover) — solo il
    titolo dell'articolo (niente più "Isola 0N —"). paint-order+stroke bianco invece di un
    text-shadow: resta leggibile sopra il mosaico del mare qualsiasi sia il tono di blu sotto. */
 .house-cap{
-  font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-weight:600;
   fill:var(--ink, #232019);
   paint-order:stroke;
   stroke:#f4f2ec;
   stroke-linejoin:round;
   pointer-events:none;
+  transition: opacity .35s ease;
 }
 .house-hover .house-frame{ transform: translateY(-4%) scale(1.05); }
 
@@ -1123,6 +1205,6 @@ watch(() => props.houses, buildBoard, { deep: true });
   .list{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:28px; padding:150px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
   .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
   .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }
-  .list .caption{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; text-shadow: 0 1px 3px rgba(255,255,255,.9), 0 1px 3px rgba(255,255,255,.9); }
+  .list .caption{ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; text-shadow: 0 1px 3px rgba(255,255,255,.9), 0 1px 3px rgba(255,255,255,.9); }
 }
 </style>

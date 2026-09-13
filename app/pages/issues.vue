@@ -2,7 +2,7 @@
   <PageBoardBackground />
   <article>
     <h1>Previous issues</h1>
-    <p v-if="pending" class="note">Caricamento…</p>
+    <p v-if="pending" class="note">Loading…</p>
     <div v-else-if="issues && issues.length" class="issue-grid">
       <component :is="iss.url ? 'a' : 'div'" v-for="iss in issues" :key="iss.number" :href="iss.url || undefined" :target="iss.url ? '_blank' : undefined" :rel="iss.url ? 'noopener' : undefined" class="issue-card" :class="{ disabled: !iss.url }">
         <div class="issue-shot" :style="iss.image ? { aspectRatio: `${iss.image.width} / ${iss.image.height}` } : undefined">
@@ -11,6 +11,7 @@
         <div class="issue-title">{{ iss.title }}</div>
       </component>
     </div>
+    <p v-else class="note">Nessun numero precedente ancora pubblicato.</p>
   </article>
 </template>
 
@@ -29,9 +30,9 @@ const { data: issues, pending } = await useFetch("/api/issues");
 /* width:100% esplicita: senza, il grid con auto-fill dentro un flex item "stretch" (vedi
    .app-shell in app.vue) veniva dimensionato sul contenuto minimo invece di riempire lo
    spazio disponibile — bug preso via screenshot (una sola colonna anche a schermo largo). */
-article{ position:relative; z-index:1; width:100%; max-width: 80vw; margin: 0 auto; padding: 220px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; box-sizing:border-box; }
+article{ position:relative; z-index:1; width:100%; max-width: 80vw; margin: 0 auto; padding: 220px 24px 80px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; color:#232019; box-sizing:border-box; }
 h1{ font-weight:normal; font-size:32px; margin: 6px 0 32px; }
-.note{ text-align:center; padding:60px 24px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; color:#6b6558; }
+.note{ text-align:center; padding:60px 24px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; color:#6b6558; }
 
 .issue-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:28px; }
 .issue-card{
@@ -51,6 +52,7 @@ a.issue-card:hover{ transform: translateY(-3px); }
      rettangolari" — richiesto esplicitamente). */
   border-radius:10px;
   overflow:hidden;
+  background:#e4ded0;
   box-shadow: 0 8px 18px rgba(15,13,10,0.18);
 }
 .issue-shot:has(.issue-shot-placeholder){ aspect-ratio: 1 / 1; }
@@ -61,12 +63,12 @@ a.issue-card:hover{ transform: translateY(-3px); }
 .issue-shot-placeholder{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:center;
-  font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-size:12px; color:#a39a86; text-align:center; padding:0 12px;
 }
 .issue-soon{
   position:absolute; right:8px; bottom:8px;
-  font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-size:10px; font-style:italic; color:#4a4438;
   background:rgba(244,241,234,0.88); padding:3px 8px; border-radius:20px;
 }

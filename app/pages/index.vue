@@ -21,5 +21,5 @@ const selected = ref<any | null>(null);
 
 <style scoped>
 .page-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-.note{ max-width:640px; margin:40px auto; padding:0 24px; text-align:center; font-family:-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:13px; color:var(--ink-soft); }
+.note{ max-width:640px; margin:40px auto; padding:0 24px; text-align:center; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size:13px; color:var(--ink-soft); }
 </style>

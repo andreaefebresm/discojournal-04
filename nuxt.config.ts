@@ -3,9 +3,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  // Fraunces (titoli/citazioni) + Inter (interfaccia/corpo) — coppia scelta dopo il
-  // confronto in font-pairings.html tra 3 abbinamenti Google Fonts, vedi CSS in app.vue /
-  // IsoBoard.vue / HouseModal.vue / articolo/[slug].vue per dove vengono applicati.
+  // Valley Sans per tutto il sito (titoli, corpo, interfaccia) — sostituisce la coppia
+  // Fraunces+Inter usata prima, richiesto esplicitamente ("voglio usare Valley Sans per
+  // tutto"). È un font variabile (Thin→Black, con asse italico): un solo @import copre
+  // tutti i pesi/stili usati nel CSS (normal/500/600/700, con font-style:italic dove serve
+  // — vedi .modal-excerpt, i blockquote, gli h3 — invece dei corsivi "veri" di Fraunces).
   app: {
     head: {
       link: [
@@ -13,7 +15,7 @@ export default defineNuxtConfig({
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;1,9..144,400&family=Inter:wght@400;500;600&display=swap'
+          href: 'https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap'
         }
       ]
     }

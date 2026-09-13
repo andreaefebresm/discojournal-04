@@ -46,13 +46,13 @@ const bodyHtml = computed(() => {
    dedicato dentro la pagina. Padding-top più ampio di prima: la barra di navigazione ora ha
    icone molto più grandi (vedi TopNav.vue), serve più spazio per non finirci sotto. */
 /* position:relative + z-index:1: sta sopra lo sfondo-board fisso (PageBoardBackground). */
-article{ position:relative; z-index:1; max-width: 680px; margin: 0 auto; padding: 220px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; }
+article{ position:relative; z-index:1; max-width: 680px; margin: 0 auto; padding: 220px 24px 80px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; color:#232019; }
 h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
-.body{ line-height:1.7; font-size:16px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; }
+.body{ line-height:1.7; font-size:16px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; }
 /* :deep() perché il contenuto di .body arriva via v-html: lo scoping normale (basato su un
    attributo aggiunto agli elementi del template) non raggiunge markup iniettato così — senza
    :deep() queste regole verrebbero silenziosamente ignorate (bug preso e corretto qui). */
-.body :deep(h3){ font-family:"Fraunces",Georgia,serif; font-style:italic; font-weight:normal; font-size:20px; margin:28px 0 10px; }
-.body :deep(blockquote){ font-family:"Fraunces",Georgia,serif; margin:20px 0; padding:4px 0 4px 18px; border-left:3px solid #c9a86a; font-style:italic; color:#4a4438; }
-.note{ text-align:center; padding:60px 24px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; color:#6b6558; }
+.body :deep(h3){ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-style:italic; font-weight:normal; font-size:20px; margin:28px 0 10px; }
+.body :deep(blockquote){ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; margin:20px 0; padding:4px 0 4px 18px; border-left:3px solid #c9a86a; font-style:italic; color:#4a4438; }
+.note{ text-align:center; padding:60px 24px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; color:#6b6558; }
 </style>
