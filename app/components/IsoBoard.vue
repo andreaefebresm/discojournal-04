@@ -115,6 +115,9 @@ function createWalkerLayer() {
   // meglio perché MAX_SPEED non è più quasi-zero.
   // Round 5: "più omini", anche singoli oltre a quelli a gruppi, gruppi meno serrati (più
   // separazione al loro interno) — vedi SINGLE_COUNT/SEP_RADIUS più sotto.
+  // Round 6: "meno opachi e più in giro" — vedi depthOpacity/op più sotto per l'opacità, e
+  // i raggi di partenza/GROUP_BOUND_R più sotto per lo spargimento (board più grande da
+  // quando c'è la sesta isola, quindi anche il "giro" degli omini è stato allargato).
   const NUM_GROUPS = 11;       // eran 9
   const GROUP_SIZE = 9;        // eran 15: gruppi meno numerosi, meno "ammassati"
   const SINGLE_COUNT = 45;     // nuovo: omini sciolti, ognuno per conto proprio
@@ -194,14 +197,14 @@ function createWalkerLayer() {
     groups = [];
     for (let i = 0; i < NUM_GROUPS; i++) {
       const a = Math.random() * Math.PI * 2;
-      const r = 90 + Math.random() * 480; // "più sparsi": area di partenza ancora più ampia
+      const r = 90 + Math.random() * 620; // "ancora più in giro": area di partenza allargata insieme alla board (sesta isola)
       groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8, size: GROUP_SIZE });
     }
     // omini singoli: la stessa identica meccanica (wander/land-avoid/repulsione), solo come
     // "gruppo" di una sola persona — vagano per conto proprio invece che assieme.
     for (let i = 0; i < SINGLE_COUNT; i++) {
       const a = Math.random() * Math.PI * 2;
-      const r = 60 + Math.random() * 520;
+      const r = 60 + Math.random() * 660;
       groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8, size: 1 });
     }
     walkers = [];
@@ -216,10 +219,10 @@ function createWalkerLayer() {
           vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6,
           phase: Math.random() * Math.PI * 2,
           wanderT: Math.random() * 10,
-          // opacità fissa per omino: alcuni leggermente più tenui, non più per dare
-          // profondità "sott'acqua" (ora sono fermi in superficie) ma solo un filo di
-          // varietà — vedi buildPictogram.
-          depthOpacity: 0.7 + Math.random() * 0.3,
+          // opacità fissa per omino: "meno opachi" su richiesta esplicita — alzato il
+          // pavimento (era 0.7-1.0, ora 0.88-1.0) così restano ben visibili, con solo un
+          // filo minimo di varietà residua — vedi buildPictogram.
+          depthOpacity: 0.88 + Math.random() * 0.12,
           // fase/frequenza del "respiro" autonomo, diverse per ognuno così non oscillano
           // tutti insieme in sincrono — vedi NOISE_AMPL e render().
           noiseAX: Math.random() * Math.PI * 2, noiseAY: Math.random() * Math.PI * 2,
@@ -271,7 +274,7 @@ function createWalkerLayer() {
   // in render() alla posizione dell'intero <g>. (Barche/boe/detriti/balene sono usciti da
   // qui — ora sono oggetti statici a colori nello stile delle isole, vedi SEA_OBJECTS.)
   function buildPictogram(w: any) {
-    const op = (0.75 + 0.25 * w.depthOpacity).toFixed(2);
+    const op = (0.9 + 0.1 * w.depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
     const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
     // ondine/schiuma: invisibili da fermi, compaiono e crescono con la velocità corrente
@@ -300,7 +303,7 @@ function createWalkerLayer() {
     simT += dt;
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
-    const GROUP_BOUND_R = 520; // "più sparsi": i centri-gruppo possono vagare ancora più lontano
+    const GROUP_BOUND_R = 660; // "ancora più in giro": raggio di vagabondaggio allargato insieme alla board
 
     // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole — vagare
     // visibile ma pacato, non un giro veloce.
@@ -506,16 +509,16 @@ const MINI_ISLAND_SCALE = 260;
 // spaziatura) ma disposizione nuova, non solo "più spostata" — vedi script di supporto
 // usato per generarle, non incluso nel progetto.
 const MINI_ISLANDS: Array<{ gx: number; gy: number; variant: number; size: number; rot: number; img?: string; imgAspect?: number }> = [
-  { gx: 156, gy: -475, variant: 0, size: 1.0, rot: 0, img: '/assets/mini-islands/reef.png' },
-  { gx: 439, gy: -413, variant: 2, size: 0.85, rot: 0, img: '/assets/mini-islands/volcano.png', imgAspect: 700 / 284 },
-  { gx: -87, gy: -470, variant: 1, size: 1.1, rot: 0, img: '/assets/mini-islands/driftwood.png' },
-  { gx: -315, gy: 5, variant: 3, size: 0.9, rot: 0, img: '/assets/mini-islands/saltflat.png' },
-  { gx: -530, gy: -301, variant: 2, size: 0.8, rot: 0, img: '/assets/mini-islands/mossyboulders.png' },
-  { gx: 168, gy: 45, variant: 0, size: 0.7, rot: 0, img: '/assets/mini-islands/mesa.png' },
-  { gx: 343, gy: 198, variant: 1, size: 1.15, rot: 0, img: '/assets/mini-islands/tidepools.png' },
-  { gx: -179, gy: -345, variant: 3, size: 0.95, rot: 0, img: '/assets/mini-islands/mangrove.png' },
-  { gx: 512, gy: -163, variant: 0, size: 0.8, rot: 0, img: '/assets/mini-islands/dunegrass.png', imgAspect: 1 },
-  { gx: 41, gy: 473, variant: 2, size: 1.0, rot: 0, img: '/assets/mini-islands/icefloe.png' },
+  { gx: 304, gy: 143, variant: 0, size: 1.0, rot: 0, img: '/assets/mini-islands/reef.png' },
+  { gx: 491, gy: -435, variant: 2, size: 0.85, rot: 0, img: '/assets/mini-islands/volcano.png', imgAspect: 700 / 284 },
+  { gx: -318, gy: -25, variant: 1, size: 1.1, rot: 0, img: '/assets/mini-islands/driftwood.png' },
+  { gx: -548, gy: -325, variant: 3, size: 0.9, rot: 0, img: '/assets/mini-islands/saltflat.png' },
+  { gx: 200, gy: 14, variant: 2, size: 0.8, rot: 0, img: '/assets/mini-islands/mossyboulders.png' },
+  { gx: -172, gy: -368, variant: 0, size: 0.7, rot: 0, img: '/assets/mini-islands/mesa.png' },
+  { gx: 569, gy: -190, variant: 1, size: 1.15, rot: 0, img: '/assets/mini-islands/tidepools.png' },
+  { gx: 265, gy: -475, variant: 3, size: 0.95, rot: 0, img: '/assets/mini-islands/mangrove.png' },
+  { gx: 183, gy: -162, variant: 0, size: 0.8, rot: 0, img: '/assets/mini-islands/dunegrass.png', imgAspect: 1 },
+  { gx: -260, gy: 398, variant: 2, size: 1.0, rot: 0, img: '/assets/mini-islands/icefloe.png' },
 ];
 // 4 "varianti" di sagoma (poligono irregolare con raggio diverso per vertice), per un
 // po' di diversità di forma senza dover disegnare 10 pittogrammi a mano.
@@ -546,14 +549,16 @@ function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: nu
     g.appendChild(img);
     return g;
   }
-  const radii = MINI_VARIANTS[mi.variant % MINI_VARIANTS.length];
+  // "!": l'indice è sempre in range (modulo sulla lunghezza dell'array) — TS non riesce a
+  // dedurlo da solo con noUncheckedIndexedAccess attivo.
+  const radii = MINI_VARIANTS[mi.variant % MINI_VARIANTS.length]!;
   const pts = radii.map((r, i) => {
     const a = (Math.PI * 2 * i) / radii.length;
     return `${(Math.cos(a) * r).toFixed(2)},${(Math.sin(a) * r * 0.62).toFixed(2)}`; // *0.62: appiattita, vista dall'alto in leggera prospettiva
   }).join(' ');
   const land = el('polygon', { points: pts, fill: MINI_FILLS[mi.variant % MINI_FILLS.length], stroke: 'rgba(30,30,25,0.35)', 'stroke-width': 0.15 });
-  const speck1 = el('circle', { cx: -radii[0] * 0.3, cy: 0.3, r: 0.5, fill: 'rgba(40,35,30,0.28)' });
-  const speck2 = el('circle', { cx: radii[2] * 0.35, cy: -0.4, r: 0.4, fill: 'rgba(40,35,30,0.22)' });
+  const speck1 = el('circle', { cx: -radii[0]! * 0.3, cy: 0.3, r: 0.5, fill: 'rgba(40,35,30,0.28)' });
+  const speck2 = el('circle', { cx: radii[2]! * 0.35, cy: -0.4, r: 0.4, fill: 'rgba(40,35,30,0.22)' });
   [land, speck1, speck2].forEach(n => g.appendChild(n));
   return g;
 }
@@ -586,13 +591,13 @@ const SEA_IMG_ASPECT = 600 / 327;
 // (isolette e oggetti condividono lo stesso pool di spaziatura, quindi vanno rilette
 // insieme, non separatamente).
 const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }> = [
-  { type: 'boat', gx: 152, gy: -135, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
-  { type: 'boat', gx: -261, gy: 437, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
-  { type: 'argo', gx: 548, gy: 140, rot: 0, img: '/assets/sea-objects/argo1.png' },
-  { type: 'argo', gx: -303, gy: -468, rot: 0, img: '/assets/sea-objects/argo2.png' },
-  { type: 'debris', gx: 557, gy: 10, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
-  { type: 'debris', gx: -458, gy: -453, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
-  { type: 'whale', gx: -489, gy: -118, rot: 25, img: '/assets/sea-objects/whale.png' },
+  { type: 'boat', gx: 88, gy: 151, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
+  { type: 'boat', gx: 431, gy: 240, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
+  { type: 'argo', gx: -305, gy: -489, rot: 0, img: '/assets/sea-objects/argo1.png' },
+  { type: 'argo', gx: -471, gy: -474, rot: 0, img: '/assets/sea-objects/argo2.png' },
+  { type: 'debris', gx: 585, gy: 324, rot: 30, variant: 'bottle', img: '/assets/sea-objects/bottle.png' },
+  { type: 'debris', gx: -566, gy: 186, rot: -20, variant: 'crate', img: '/assets/sea-objects/crate.png' },
+  { type: 'whale', gx: -36, gy: 415, rot: 25, img: '/assets/sea-objects/whale.png' },
 ];
 function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }) {
   const p = proj(so.gx, so.gy);
@@ -612,7 +617,8 @@ function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number;
   if (so.img) {
     // immagine vera: stesso schema delle mini-isole, larghezza in unità locali da
     // SEA_IMG_W (per tipo), altezza dall'aspect ratio della sorgente.
-    const W = SEA_IMG_W[so.type], H = W / (so.imgAspect || SEA_IMG_ASPECT);
+    // "!": so.type è sempre una delle chiavi note di SEA_IMG_W (boat/argo/debris/whale).
+    const W = SEA_IMG_W[so.type]!, H = W / (so.imgAspect || SEA_IMG_ASPECT);
     const img = el('image', { href: so.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
     float.appendChild(img);
     return g;
@@ -729,7 +735,8 @@ function buildBoard() {
   // trovati via ricerca Python per il layout a 5 isole (vedi app/data/islandLayout.ts).
   const { gxMin: gxMin0, gxMax: gxMax0, gyMin: gyMin0, gyMax: gyMax0 } = props.gridBounds;
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  [[gxMin0, gyMin0], [gxMax0, gyMin0], [gxMax0, gyMax0], [gxMin0, gyMax0]].forEach(([gx, gy]) => {
+  const corners: Array<[number, number]> = [[gxMin0, gyMin0], [gxMax0, gyMin0], [gxMax0, gyMax0], [gxMin0, gyMax0]];
+  corners.forEach(([gx, gy]) => {
     const p = proj(gx, gy);
     minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
     minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
@@ -840,34 +847,42 @@ function buildBoard() {
     }
     return cells;
   }
-  function traceStepBoundary(cells: Set<string>, cell: number): number[][] | null {
+  // tipi a tupla fissa (non number[][]/number[]): così destrutturare un punto o un edge
+  // resta un array di lunghezza nota per TS, niente "possibly undefined" per ogni [0]/[1].
+  type Pt = [number, number];
+  type Edge = [Pt, Pt];
+  function traceStepBoundary(cells: Set<string>, cell: number): Pt[] | null {
     const has = (gx: number, gy: number) => cells.has(gx + ',' + gy);
-    const edges: number[][][] = [];
+    const edges: Edge[] = [];
     cells.forEach(key => {
-      const [gx, gy] = key.split(',').map(Number);
+      // "as [number,number]": ogni key è sempre nel formato "gx,gy" (due parti), per
+      // costruzione — vedi insideCellSet() più sopra, unico posto che popola "cells".
+      const [gx, gy] = key.split(',').map(Number) as [number, number];
       if (!has(gx - cell, gy)) edges.push([[gx, gy], [gx, gy + cell]]);
       if (!has(gx + cell, gy)) edges.push([[gx + cell, gy], [gx + cell, gy + cell]]);
       if (!has(gx, gy - cell)) edges.push([[gx, gy], [gx + cell, gy]]);
       if (!has(gx, gy + cell)) edges.push([[gx, gy + cell], [gx + cell, gy + cell]]);
     });
     if (!edges.length) return null;
-    const pk = (p: number[]) => p[0] + ',' + p[1];
-    const adj = new Map<string, number[][]>();
+    const pk = (p: Pt) => p[0] + ',' + p[1];
+    const adj = new Map<string, Pt[]>();
     edges.forEach(([a, b]) => {
       if (!adj.has(pk(a))) adj.set(pk(a), []);
       if (!adj.has(pk(b))) adj.set(pk(b), []);
       adj.get(pk(a))!.push(b);
       adj.get(pk(b))!.push(a);
     });
-    const ek = (a: number[], b: number[]) => { const ka = pk(a), kb = pk(b); return ka < kb ? ka + '|' + kb : kb + '|' + ka; };
+    const ek = (a: Pt, b: Pt) => { const ka = pk(a), kb = pk(b); return ka < kb ? ka + '|' + kb : kb + '|' + ka; };
     const used = new Set<string>();
-    const start = edges[0][0];
+    // "!": appena sopra si esce con "return null" quando edges è vuoto, quindi qui c'è
+    // sempre almeno un edge.
+    const start = edges[0]![0]!;
     const path = [start];
     let cur = start;
     let guard = 0;
     while (guard++ < 6000) {
       const neighbors = adj.get(pk(cur)) || [];
-      let next: number[] | null = null;
+      let next: Pt | null = null;
       for (const n of neighbors) { if (!used.has(ek(cur, n))) { next = n; used.add(ek(cur, n)); break; } }
       if (next === null) break;
       path.push(next);

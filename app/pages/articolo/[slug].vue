@@ -1,9 +1,9 @@
 <template>
   <article v-if="house">
-    <NuxtLink to="/" class="back">← torna al tabellone</NuxtLink>
-    <div class="badge">Isola 0{{ house.number }}</div>
+    <NuxtLink to="/" class="back">← back to the ocean</NuxtLink>
     <h1>{{ house.title }}</h1>
     <img v-if="house.image" :src="ctfImg(house.image.url, { w: 1200 })" :alt="house.title" class="hero" loading="lazy" decoding="async" />
+    <p v-if="house.excerpt" class="excerpt">{{ house.excerpt }}</p>
     <div class="body" v-html="bodyHtml"></div>
   </article>
   <p v-else-if="pending" class="note">Caricamento…</p>
@@ -50,6 +50,9 @@ article{ max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; font-family:
 .badge{ font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#b0a98f; margin-top:20px; }
 h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
 .hero{ width:100%; border-radius:6px; margin-bottom:24px; filter: drop-shadow(0 10px 16px rgba(15,13,10,.2)); }
+/* stesso trattamento dell'estratto nel modal (.modal-excerpt) — coerenza tra le due viste
+   dello stesso articolo, richiesta esplicitamente ("formattato come quello nel modal"). */
+.excerpt{ font-style:italic; color:#6b6558; font-family:"Fraunces",Georgia,serif; font-size:17px; margin:0 0 20px; }
 .body{ line-height:1.7; font-size:16px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; }
 /* :deep() perché il contenuto di .body arriva via v-html: lo scoping normale non raggiunge
    markup iniettato così — senza :deep() queste due regole erano silenziosamente ignorate

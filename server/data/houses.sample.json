@@ -1,10 +1,14 @@
 [
   {
-    "slug": "isola-charlotte",
+    "slug": "charlotte-schuitenmaker",
     "number": 1,
     "title": "Charlotte Schuitenmaker",
     "excerpt": "Pratiche musicali urbane indigene australiane.",
-    "image": { "url": "/assets/islands/island1_charlotte.png", "width": 2400, "height": 1792 },
+    "image": {
+      "url": "/assets/islands/island1_charlotte.png",
+      "width": 2400,
+      "height": 1792
+    },
     "body": [
       "## Nota redazionale",
       "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
@@ -12,11 +16,15 @@
     ]
   },
   {
-    "slug": "isola-fareda",
+    "slug": "fareda-el-shaaer",
     "number": 2,
     "title": "Fareda El Shaaer",
     "excerpt": "Accento egiziano, tecnologie di riconoscimento vocale e identità diasporica.",
-    "image": { "url": "/assets/islands/island2_fareda.png", "width": 2400, "height": 1792 },
+    "image": {
+      "url": "/assets/islands/island2_fareda.png",
+      "width": 2400,
+      "height": 1792
+    },
     "body": [
       "## Nota redazionale",
       "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
@@ -24,11 +32,15 @@
     ]
   },
   {
-    "slug": "isola-april",
+    "slug": "april-wei-west",
     "number": 3,
     "title": "April Wei-West",
     "excerpt": "Comunità online di vocal synth e affordance delle piattaforme di ascolto (ricerca sul campo in Giappone).",
-    "image": { "url": "/assets/islands/island3_april.png", "width": 2400, "height": 1792 },
+    "image": {
+      "url": "/assets/islands/island3_april.png",
+      "width": 2400,
+      "height": 1792
+    },
     "body": [
       "## Nota redazionale",
       "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
@@ -36,11 +48,15 @@
     ]
   },
   {
-    "slug": "isola-nicole",
+    "slug": "nicole-furtado",
     "number": 4,
     "title": "Nicole Furtado",
     "excerpt": "Racconto sf su scarsità d'acqua e IA, ispirato alle Hawaii.",
-    "image": { "url": "/assets/islands/island4_nicole.png", "width": 2400, "height": 1792 },
+    "image": {
+      "url": "/assets/islands/island4_nicole.png",
+      "width": 2400,
+      "height": 1792
+    },
     "body": [
       "## Nota redazionale",
       "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
@@ -48,15 +64,31 @@
     ]
   },
   {
-    "slug": "isola-crassula",
+    "slug": "crassula-shang",
     "number": 5,
     "title": "Crassula Shang",
     "excerpt": "Chinese Cyberfeminism Archive.",
-    "image": { "url": "/assets/islands/island5_crassula.png", "width": 1200, "height": 896 },
+    "image": {
+      "url": "/assets/islands/island5_crassula.png",
+      "width": 1200,
+      "height": 896
+    },
     "body": [
       "## Nota redazionale",
       "> Segnaposto: qui andrà l'estratto o la citazione chiave dell'articolo, in evidenza.",
       "Testo segnaposto dell'articolo 05 con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
+    ]
+  },
+  {
+    "slug": "the-editors",
+    "number": 6,
+    "title": "The Editors",
+    "excerpt": "Note editoriali del team di DiSCo Journal per questo numero.",
+    "image": { "url": "/assets/islands/island6_editors.png", "width": 1200, "height": 896 },
+    "body": [
+      "## Nota redazionale",
+      "> Segnaposto: qui andrà l'editoriale del team, l'estratto/citazione chiave in evidenza.",
+      "Testo segnaposto dell'articolo degli editors con **testo in grassetto** e *testo in corsivo*, da sostituire con il contenuto reale da Contentful."
     ]
   }
 ]

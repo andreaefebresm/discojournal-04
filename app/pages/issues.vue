@@ -1,19 +1,16 @@
 <template>
   <PageBoardBackground />
   <article>
-    <h1>Issues — numeri precedenti</h1>
+    <h1>Previous issues</h1>
     <p v-if="pending" class="note">Caricamento…</p>
     <div v-else-if="issues && issues.length" class="issue-grid">
       <component :is="iss.url ? 'a' : 'div'" v-for="iss in issues" :key="iss.number" :href="iss.url || undefined" :target="iss.url ? '_blank' : undefined" :rel="iss.url ? 'noopener' : undefined" class="issue-card" :class="{ disabled: !iss.url }">
-        <div class="issue-shot">
+        <div class="issue-shot" :style="iss.image ? { aspectRatio: `${iss.image.width} / ${iss.image.height}` } : undefined">
           <img v-if="iss.image" :src="ctfImg(iss.image.url, { w: 500 })" :alt="iss.title" loading="lazy" decoding="async" />
-          <div v-else class="issue-shot-placeholder">Copertina in arrivo</div>
-          <span v-if="!iss.url" class="issue-soon">presto disponibile</span>
         </div>
         <div class="issue-title">{{ iss.title }}</div>
       </component>
     </div>
-    <p v-else class="note">Nessun numero precedente ancora pubblicato.</p>
   </article>
 </template>
 
@@ -32,11 +29,11 @@ const { data: issues, pending } = await useFetch("/api/issues");
 /* width:100% esplicita: senza, il grid con auto-fill dentro un flex item "stretch" (vedi
    .app-shell in app.vue) veniva dimensionato sul contenuto minimo invece di riempire lo
    spazio disponibile — bug preso via screenshot (una sola colonna anche a schermo largo). */
-article{ position:relative; z-index:1; width:100%; max-width: 760px; margin: 0 auto; padding: 220px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; box-sizing:border-box; }
+article{ position:relative; z-index:1; width:100%; max-width: 80vw; margin: 0 auto; padding: 220px 24px 80px; font-family: "Fraunces", Georgia, serif; color:#232019; box-sizing:border-box; }
 h1{ font-weight:normal; font-size:32px; margin: 6px 0 32px; }
 .note{ text-align:center; padding:60px 24px; font-family:"Inter",-apple-system,"Helvetica Neue",Arial,sans-serif; color:#6b6558; }
 
-.issue-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:28px; }
+.issue-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:28px; }
 .issue-card{
   display:flex; flex-direction:column; gap:12px;
   text-decoration:none; color:inherit; cursor:pointer;
@@ -47,13 +44,20 @@ a.issue-card:hover{ transform: translateY(-3px); }
 
 .issue-shot{
   position:relative;
-  aspect-ratio: 1 / 1;
+  /* niente più aspect-ratio fisso a 1/1 qui: quello resta solo per il placeholder (vedi
+     sotto) — quando c'è un'immagine vera, l'aspect-ratio viene impostato inline da quella
+     dell'immagine stessa (iss.image.width/height), così il riquadro segue la sua forma
+     reale invece di forzarla a quadrato ("non tagliate ma della dimensione reale,
+     rettangolari" — richiesto esplicitamente). */
   border-radius:10px;
   overflow:hidden;
-  background:#e4ded0;
   box-shadow: 0 8px 18px rgba(15,13,10,0.18);
 }
-.issue-shot img{ width:100%; height:100%; object-fit:cover; display:block; }
+.issue-shot:has(.issue-shot-placeholder){ aspect-ratio: 1 / 1; }
+/* object-fit:contain, non più cover: con l'aspect-ratio del riquadro già uguale a quella
+   dell'immagine non dovrebbe tagliare comunque, ma contain è la garanzia che l'immagine
+   resti sempre intera anche se le due proporzioni non combaciano al pixel. */
+.issue-shot img{ width:100%; height:100%; object-fit:contain; display:block; }
 .issue-shot-placeholder{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:center;

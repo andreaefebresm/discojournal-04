@@ -3,7 +3,21 @@
     <div v-if="house" class="modal-window" role="dialog" aria-modal="true" :aria-label="`Isola 0${house.number} — ${house.title}`">
       <div class="modal-titlebar">
         <span>Isola 0{{ house.number }} — {{ house.title }}</span>
-        <button class="modal-close" type="button" aria-label="Chiudi" @click="$emit('close')">✕</button>
+        <div class="modal-actions">
+          <NuxtLink
+            :to="`/articolo/${house.slug}`"
+            class="modal-open"
+            :aria-label="`Apri '${house.title}' in una pagina dedicata`"
+            title="Apri in una pagina dedicata"
+            @click="$emit('close')"
+          >
+            <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true">
+              <path d="M8 4H4.8A1.8 1.8 0 0 0 3 5.8v9.4A1.8 1.8 0 0 0 4.8 17h9.4A1.8 1.8 0 0 0 16 15.2V12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 3h6v6M17 3l-8 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </NuxtLink>
+          <button class="modal-close" type="button" aria-label="Chiudi" @click="$emit('close')">✕</button>
+        </div>
       </div>
       <div class="modal-body">
         <p v-if="house.excerpt" class="modal-excerpt">{{ house.excerpt }}</p>
@@ -67,34 +81,46 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
   padding:24px;
 }
 .modal-backdrop.open{ display:flex; }
-/* finestra più larga e più alta ("più larghe e grandi", rif. screenshot mandato) — non a
-   tutto schermo, resta una finestra interna alla pagina, ma con molto più respiro per
-   immagine e testo. */
+/* finestra più larga ("fare più largo il modal", richiesta esplicita) — non a tutto schermo,
+   resta una finestra interna alla pagina. Ombra sotto rinforzata/a due strati, per staccarla
+   meglio dallo sfondo ("ombra sotto al modal"). Stroke tutto intorno color grout/spuma del
+   mosaico del mare ("come quello delle onde") — vedi mosaicMid/mosaicShallow in IsoBoard.vue,
+   stessa famiglia di azzurri e la stessa riga chiara che separa i tasselli. */
 .modal-window{
   background:#faf8f2;
-  border-radius:8px;
-  box-shadow:0 24px 48px rgba(15,13,10,0.4);
-  width:100%; max-width:900px;
+  border-radius:10px;
+  border: 2px solid #eef4fc;
+  box-shadow:
+    0 4px 0 rgba(74,106,168,0.35),
+    0 38px 64px -14px rgba(15,26,46,0.48),
+    0 14px 28px rgba(15,26,46,0.28);
+  width:100%; max-width:1180px;
   max-height:92vh;
   overflow:auto;
 }
+/* header "azzurro come lo sfondo sotto" — stessa coppia di blu del mosaico mid/shallow che
+   si vede dietro il modal sulla board (vedi mosaicMidSVG/mosaicShallowSVG in IsoBoard.vue). */
 .modal-titlebar{
   position:sticky; top:0;
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 22px;
-  background:#2c2620; color:#efe9d8;
-  border-radius:8px 8px 0 0;
+  background: linear-gradient(135deg, #5c7ab8, #7590c6);
+  color:#f4f8ff;
+  border-radius:7px 7px 0 0;
   font-family: "Inter", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-size:14px; letter-spacing:.02em;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.25);
 }
-.modal-close{
+.modal-actions{ display:flex; align-items:center; gap:4px; }
+.modal-open, .modal-close{
   all:unset; cursor:pointer; line-height:1;
-  width:22px; height:22px; text-align:center;
-  border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  width:26px; height:26px; text-align:center;
+  border-radius:5px;
   color: inherit;
 }
-.modal-close:hover{ background:rgba(255,255,255,0.15); }
-.modal-body{ padding:28px 34px 34px; max-width:680px; margin:0 auto; }
+.modal-open:hover, .modal-close:hover{ background:rgba(255,255,255,0.18); }
+.modal-body{ padding:28px 34px 34px; max-width:720px; margin:0 auto; }
 .modal-excerpt{ font-style:italic; color:var(--ink-soft); }
 /* ---- stili di testo differenziati dentro l'articolo: paragrafo normale, sottotitolo (h3),
    citazione/estratto (blockquote), grassetto/corsivo/link inline — così il corpo non è più

@@ -13,9 +13,10 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const res = await client.getEntries({ content_type: "casa", "fields.slug": slug, limit: 1 } as any);
-    if (!res.items.length) throw createError({ statusCode: 404, statusMessage: "Casa non trovata" });
-    return mapHouseEntry(res.items[0]);
+    const res = await client.getEntries({ content_type: "article", "fields.slug": slug, limit: 1 } as any);
+    const item = res.items[0];
+    if (!item) throw createError({ statusCode: 404, statusMessage: "Casa non trovata" });
+    return mapHouseEntry(item);
   } catch (err: any) {
     if (err.statusCode === 404) throw err;
     console.error("[api/houses/:slug] fetch Contentful fallito, uso i dati di esempio:", err);

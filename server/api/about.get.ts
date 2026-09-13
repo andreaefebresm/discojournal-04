@@ -11,11 +11,12 @@ export default defineEventHandler(async (event) => {
 
   try {
     const res = await client.getEntries({ content_type: "about", limit: 1 } as any);
-    if (!res.items.length) {
+    const item = res.items[0];
+    if (!item) {
       console.warn("[api/about] nessuna entry del content type \"about\" trovata su Contentful, uso i dati di esempio.");
       return sample;
     }
-    return mapAboutEntry(res.items[0]);
+    return mapAboutEntry(item);
   } catch (err) {
     console.error("[api/about] fetch Contentful fallito, uso i dati di esempio:", err);
     return sample;
