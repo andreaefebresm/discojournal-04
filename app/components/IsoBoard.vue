@@ -69,12 +69,6 @@ const svgEl = ref<SVGSVGElement | null>(null);
 const GX_X = 26, GX_Y = 6.0;   // asse gx: ~12.9° (tan⁻¹(6/26))
 const GY_X = 26, GY_Y = 12.23; // asse gy: ~25.2° (tan⁻¹(12.23/26))
 
-// diametro (in unità SVG) della "macchia" di deformazione che segue il cursore sul mare —
-// usato sia per costruire la feImage sorgente (buildBoard) sia per posizionarla ad ogni
-// pointermove (updatePointerRipple, dentro createWalkerLayer): livello di modulo perché
-// serve a entrambe le funzioni.
-const POINTER_RIPPLE_SIZE = 340;
-
 function proj(gx: number, gy: number) { return { x: gx * GX_X - gy * GY_X, y: gx * GX_Y + gy * GY_Y }; }
 // inversa di proj(): serve per capire, dato un rettangolo in pixel (il contenitore
 // reale), quale intervallo di gx/gy serve perché il mare copra l'intero viewBox.
@@ -108,55 +102,28 @@ const ISLAND_HW = 1792 / 2400;
 // repulsione passiva). "Terra" = un'ellisse inscritta nell'ingombro di ogni isola.
 // ================================================================================================
 function createWalkerLayer() {
-  // Round 2: "tantissimi di più", bianchi come le linee/grout del mosaico, più piccoli,
-  // sparsi ovunque nel mare (non solo vicino alle isole) e a GRUPPI PIÙ FITTI (prima
-  // separazione soltanto, ora anche un richiamo verso il centro del proprio gruppo — vedi
-  // COHESION_STRENGTH). Restano sempre "a nuoto": testa più opaca (resta "a pelo d'acqua"),
-  // corpo più trasparente con un'opacità fissa per omino (si "perdono" nel blu, alcuni più
-  // sfumati di altri, come nuotassero a profondità diverse). Mouse-repulsione più decisa.
-  // Round 3: da omini bianchi "a nuoto" a piccole figure colorate viste dall'alto — testa
-  // nera + vestiti colorati. Round 4: erano diventati troppo statici — "un po' di
-  // movimento, noise", più grandi (non troppo) e più sparsi, ancora a gruppi ma con un
-  // vagare più naturale. La repulsione al mouse (REPEL_*) c'era già e resta, ora si vede
-  // meglio perché MAX_SPEED non è più quasi-zero.
-  // Round 5: "più omini", anche singoli oltre a quelli a gruppi, gruppi meno serrati (più
-  // separazione al loro interno) — vedi SINGLE_COUNT/SEP_RADIUS più sotto.
-  // Round 6: "meno opachi e più in giro" — vedi depthOpacity/op più sotto per l'opacità, e
-  // i raggi di partenza/GROUP_BOUND_R più sotto per lo spargimento (board più grande da
-  // quando c'è la sesta isola, quindi anche il "giro" degli omini è stato allargato).
-  const NUM_GROUPS = 11;       // eran 9
-  const GROUP_SIZE = 9;        // eran 15: gruppi meno numerosi, meno "ammassati"
-  const SINGLE_COUNT = 45;     // nuovo: omini sciolti, ognuno per conto proprio
-  const WALKER_SCALE = 17;     // erano 13: un po' più grandi, non troppo
+  const NUM_GROUPS = 11;
+  const GROUP_SIZE = 9;
+  const SINGLE_COUNT = 45;
+  const WALKER_SCALE = 17;
 
   const BODY_COLORS = ['#c1552c', '#e0a72e', '#3b6ea5', '#2f8f7a', '#8b5fa3', '#6b8e4f', '#d97b8f', '#4a5a6a', '#2c7fb8'];
   const SKIN_TONES = ['#e8b58c', '#c98a5b', '#8d5a3c', '#f2c9a0'];
   const PANTS_TONES = ['#2e2e2e', '#d8d2c2', '#5b6b73', '#efe9d8'];
 
-  // Round 6 (superato): "sostituire alcuni degli omini a nuoto con altre cose che si
-  // trovano in mare" — barchette/boe/detriti/balene, prima fatte come pittogrammi SVG
-  // animati insieme agli omini. Round 7: quelle "altre cose" diventano immagini statiche
-  // nello stesso stile fotorealistico delle isole (non più animate, non più parte della
-  // simulazione omini/gruppi) — vedi SEA_OBJECTS più sotto. I walker restano SOLO persone.
+  const REPEL_RADIUS = 26;
+  const REPEL_STRENGTH = 420;
+  const MAX_SPEED = 1.1;
+  const WANDER_JITTER = 0.22;
+  const NOISE_AMPL = 0.6;
 
-  const REPEL_RADIUS = 26;     // erano 16: il mouse si sente da più lontano
-  const REPEL_STRENGTH = 420;  // erano 220: molto più "respingente"
-  const MAX_SPEED = 1.1;       // eran 0.35 (troppo fermi): vagare lento ma visibile
-  const WANDER_JITTER = 0.22;  // eran 0.06: scarti di direzione un po' più naturali
-  // "noise"/respiro autonomo: un'oscillazione morbida indipendente dal movimento vero e
-  // proprio, così anche un omino praticamente fermo continua ad avere un filo di vita (si
-  // "respira un po' da solo") invece di restare rigido — vedi render().
-  const NOISE_AMPL = 0.6;      // eran 0.35: più "noise" visibile, come richiesto
-
-  const SEP_RADIUS = 8;        // era 5 (poi 4): "meno vicini fra loro" — si respingono da più lontano
+  const SEP_RADIUS = 8;
   const SEP_STRENGTH = 6;
-  const COHESION_STRENGTH = 0.6; // era 0.85: richiamo verso il gruppo ancora più morbido
+  const COHESION_STRENGTH = 0.6;
 
-  const LAND_PUSH_STRENGTH = 260; // forza con cui vengono respinti se finiscono sopra un'isola
+  const LAND_PUSH_STRENGTH = 260;
   const LAND_MARGIN = 16;
 
-  // spinge un punto (omino o centro-gruppo) fuori dal perimetro ellittico di un'isola se
-  // ci si trova dentro, in direzione radiale (via via più forte quanto più è "dentro").
   function landAvoidForce(w: any, dt: number, strength: number) {
     props.houses.forEach(isl => {
       const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
@@ -171,9 +138,6 @@ function createWalkerLayer() {
       }
     });
   }
-  // vincolo rigido (non solo una forza): garantisce che il punto non entri mai nell'area
-  // (isola + margine) — la sola forza poteva essere sopraffatta da altre forze e lasciare
-  // per un istante l'omino visibilmente sovrapposto al bordo della PNG.
   function clampOffLand(w: any, margin: number) {
     props.houses.forEach(isl => {
       const cx = isl.gx0 + isl.cols / 2, cy = isl.gy0 + isl.rows / 2;
@@ -190,24 +154,18 @@ function createWalkerLayer() {
     });
   }
 
-  // stato della simulazione: creato UNA VOLTA sola (persiste tra i resize/rebuild della board,
-  // che invece ricreano tutto il DOM svg da zero via svg.innerHTML='')
-  let groups: any[] | null = null; // centri dei gruppi: vagano lentamente per tutto il mare
+  let groups: any[] | null = null;
   let walkers: any[] | null = null;
-  let simT = 0; // tempo continuo, indipendente dalla velocità di ognuno — alimenta il "respiro"
+  let simT = 0;
   function initWalkers() {
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
-    // i centri-gruppo partono sparsi su un'area molto ampia: è quello che dà l'effetto
-    // "sparsi in giro nell'acqua" invece che ammassati vicino alle isole.
     groups = [];
     for (let i = 0; i < NUM_GROUPS; i++) {
       const a = Math.random() * Math.PI * 2;
-      const r = 90 + Math.random() * 620; // "ancora più in giro": area di partenza allargata insieme alla board (sesta isola)
+      const r = 90 + Math.random() * 620;
       groups.push({ gx: cx0 + Math.cos(a) * r, gy: cy0 + Math.sin(a) * r, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, wanderT: Math.random() * 8, size: GROUP_SIZE });
     }
-    // omini singoli: la stessa identica meccanica (wander/land-avoid/repulsione), solo come
-    // "gruppo" di una sola persona — vagano per conto proprio invece che assieme.
     for (let i = 0; i < SINGLE_COUNT; i++) {
       const a = Math.random() * Math.PI * 2;
       const r = 60 + Math.random() * 660;
@@ -217,7 +175,7 @@ function createWalkerLayer() {
     groups.forEach((g, gi) => {
       for (let i = 0; i < g.size; i++) {
         const a = Math.random() * Math.PI * 2;
-        const r = g.size === 1 ? 0 : Math.random() * 36; // gruppi meno serrati: più raggio di nascita
+        const r = g.size === 1 ? 0 : Math.random() * 36;
         walkers!.push({
           group: gi,
           gx: g.gx + Math.cos(a) * r,
@@ -225,38 +183,24 @@ function createWalkerLayer() {
           vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6,
           phase: Math.random() * Math.PI * 2,
           wanderT: Math.random() * 10,
-          // opacità fissa per omino: "meno opachi" su richiesta esplicita — alzato il
-          // pavimento (era 0.7-1.0, ora 0.88-1.0) così restano ben visibili, con solo un
-          // filo minimo di varietà residua — vedi buildPictogram.
           depthOpacity: 0.88 + Math.random() * 0.12,
-          // fase/frequenza del "respiro" autonomo, diverse per ognuno così non oscillano
-          // tutti insieme in sincrono — vedi NOISE_AMPL e render().
           noiseAX: Math.random() * Math.PI * 2, noiseAY: Math.random() * Math.PI * 2,
           noiseFX: 0.5 + Math.random() * 0.4, noiseFY: 0.4 + Math.random() * 0.5,
-          // aspetto: colore vestito + tono pelle/pantaloni + rotazione e posa fissati alla
-          // nascita (non più orientati dalla direzione di marcia: ora sono fermi, orientati
-          // a caso come nel riferimento fornito).
           color: BODY_COLORS[(Math.random() * BODY_COLORS.length) | 0],
           skin: SKIN_TONES[(Math.random() * SKIN_TONES.length) | 0],
           pants: PANTS_TONES[(Math.random() * PANTS_TONES.length) | 0],
           rot: Math.random() * 360,
-          armA: -55 - Math.random() * 45,   // angolo braccio sinistro (gradi, variazione di posa)
-          armB: 55 + Math.random() * 45,    // angolo braccio destro
+          armA: -55 - Math.random() * 45,
+          armB: 55 + Math.random() * 45,
           armLenA: 2.2 + Math.random() * 1.6,
           armLenB: 2.2 + Math.random() * 1.6,
-          sitting: Math.random() < 0.22,    // ~1 su 5: posa raccolta/seduta invece che eretta
+          sitting: Math.random() < 0.22,
         });
       }
     });
   }
   initWalkers();
 
-  // ---- pittogramma visto dall'alto: vestito colorato (busto), braccia color-pelle a due
-  // angoli fissi (posa), testa nera sempre in cima (l'elemento più "alto"/vicino, come nel
-  // riferimento fornito). Ferme di natura — nessuna animazione di gambe/braccia legata al
-  // movimento: la sola vita residua è il filo di respiro applicato in render() alla
-  // posizione dell'intero gruppo <g>.
-  // corpo di una PERSONA vista dall'alto (comportamento originale, invariato)
   function buildPersonBody(w: any, op: string, g: SVGElement) {
     const legL = el('ellipse', { cx: -1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
     const legR = el('ellipse', { cx: 1.3, cy: 3.6, rx: 1.1, ry: 1.9, fill: w.pants, opacity: op });
@@ -274,18 +218,10 @@ function createWalkerLayer() {
     const head = el('circle', { cx: 0, cy: (w.sitting ? -2.6 : -4.2), r: 1.7, fill: '#181818', opacity: op });
     [legL, legR, armL, armR, torso, head].forEach(n => g.appendChild(n));
   }
-  // ---- pittogramma visto dall'alto: una persona (vestito colorato, braccia color-pelle a
-  // due angoli fissi, testa nera sempre in cima). Ferme di natura — nessuna animazione di
-  // gambe/braccia legata al movimento: la sola vita residua è il filo di respiro applicato
-  // in render() alla posizione dell'intero <g>. (Barche/boe/detriti/balene sono usciti da
-  // qui — ora sono oggetti statici a colori nello stile delle isole, vedi SEA_OBJECTS.)
   function buildPictogram(w: any) {
     const op = (0.9 + 0.1 * w.depthOpacity).toFixed(2);
     const g = el('g', { class: 'walker' });
     const shadow = el('ellipse', { cx: 0, cy: 1, rx: 4.6, ry: 5.4, fill: 'rgba(10,30,35,0.16)' });
-    // ondine/schiuma: invisibili da fermi, compaiono e crescono con la velocità corrente
-    // (w.curSpeed, impostata in step()) — vedi render(). Sotto il "corpo" nell'ordine di
-    // disegno, così sembrano intorno all'acqua smossa, non sopra.
     const wake = el('ellipse', { cx: 0, cy: 1.5, rx: 5, ry: 3.2, fill: 'none', stroke: 'rgba(244,248,255,0.75)', 'stroke-width': 1, opacity: 0 });
     const foamA = el('circle', { cx: -3, cy: 2.2, r: 0.6, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
     const foamB = el('circle', { cx: 3, cy: 1.8, r: 0.55, fill: 'rgba(244,248,255,0.9)', opacity: 0 });
@@ -305,43 +241,12 @@ function createWalkerLayer() {
     return invProj(p.x, p.y);
   }
 
-  // sposta la <feImage> #pointerRippleImg (vedi handWobbleSVG) sul punto del mare sotto il
-  // cursore — coordinate SVG "grezze" (stesso spazio del rect del mare), non quelle di griglia
-  // usate da screenToGrid/pointerGrid. Nota: usiamo una feImage con sorgente data-URI (raster),
-  // NON un riferimento a un elemento locale (es. <feImage href="#id">) — quest'ultima tecnica
-  // non viene renderizzata in modo affidabile da Chromium quando l'elemento sorgente vive dentro
-  // <defs>, verificato empiricamente (nessuna deformazione visibile nonostante nessun errore in
-  // console). La feImage con data-URI è invece un riferimento a un'immagine esterna vera e
-  // propria, supportato ovunque. Ricerca il nodo ad ogni chiamata invece di tenerne un
-  // riferimento: i <defs> vengono ricreati a ogni buildBoard(), un riferimento salvato
-  // diventerebbe stale al primo rebuild (resize, nuove isole, ecc.).
-  function updatePointerRipple(clientX: number, clientY: number) {
-    if (!mountedSvg) return;
-    const img = mountedSvg.querySelector('#pointerRippleImg');
-    if (!img) return;
-    const pt = mountedSvg.createSVGPoint();
-    pt.x = clientX; pt.y = clientY;
-    const ctm = mountedSvg.getScreenCTM();
-    if (!ctm) return;
-    const p = pt.matrixTransform(ctm.inverse());
-    const half = POINTER_RIPPLE_SIZE / 2;
-    img.setAttribute('x', (p.x - half).toFixed(1));
-    img.setAttribute('y', (p.y - half).toFixed(1));
-  }
-  function hidePointerRipple() {
-    if (!mountedSvg) return;
-    const img = mountedSvg.querySelector('#pointerRippleImg');
-    if (img) { img.setAttribute('x', '-99999'); img.setAttribute('y', '-99999'); }
-  }
-
   function step(dt: number) {
     simT += dt;
     const cx0 = props.houses.reduce((s, h) => s + h.gx0 + h.cols / 2, 0) / props.houses.length;
     const cy0 = props.houses.reduce((s, h) => s + h.gy0 + h.rows / 2, 0) / props.houses.length;
-    const GROUP_BOUND_R = 660; // "ancora più in giro": raggio di vagabondaggio allargato insieme alla board
+    const GROUP_BOUND_R = 660;
 
-    // i centri-gruppo vagano lentamente per tutto il mare, evitando le isole — vagare
-    // visibile ma pacato, non un giro veloce.
     groups!.forEach(g => {
       g.wanderT -= dt;
       if (g.wanderT <= 0) {
@@ -366,18 +271,12 @@ function createWalkerLayer() {
         w.vy += (Math.random() - 0.5) * WANDER_JITTER;
         w.wanderT = 1 + Math.random() * 1.5;
       }
-      // richiamo verso il centro del proprio gruppo — è questo che tiene i gruppi "fitti"
-      // mentre vagano insieme, invece di disperdersi in un'unica nuvola uniforme
       const gc = groups![w.group];
       const dxg = gc.gx - w.gx, dyg = gc.gy - w.gy, dg = Math.hypot(dxg, dyg);
       if (dg > 0.001) {
         const f = Math.min(dg, 40) * COHESION_STRENGTH * dt * 0.1;
         w.vx += dxg / dg * f; w.vy += dyg / dg * f;
       }
-      // repulsione dal mouse — mai afferrabili, solo si scostano (ora molto più marcata).
-      // "più veloci in hover": oltre alla spinta, si alza anche il tetto di velocità qui
-      // sotto (vedi speedCap) così lo scatto resta visibile invece di essere subito
-      // riassorbito dal clamp a MAX_SPEED fisso.
       let pointerBoost = 0;
       if (pointerGrid) {
         const dx = w.gx - pointerGrid.gx, dy = w.gy - pointerGrid.gy, d = Math.hypot(dx, dy);
@@ -388,25 +287,17 @@ function createWalkerLayer() {
           pointerBoost = closeness;
         }
       }
-      // separazione dagli altri omini dello STESSO gruppo, raggio corto: si stringono
-      // parecchio prima di respingersi, da cui l'effetto "gruppo fitto" invece che sparpagliato
       walkers!.forEach(o => {
         if (o === w || o.group !== w.group) return;
         const dx = w.gx - o.gx, dy = w.gy - o.gy, d = Math.hypot(dx, dy);
         if (d > 0.001 && d < SEP_RADIUS) { w.vx += dx / d * SEP_STRENGTH * dt; w.vy += dy / d * SEP_STRENGTH * dt; }
       });
-      // restano sempre in acqua: se finiscono dentro il perimetro di un'isola vengono
-      // respinti fuori (niente camminata "a terra" sopra le isole)
       landAvoidForce(w, dt, LAND_PUSH_STRENGTH);
 
       w.vx *= 0.92; w.vy *= 0.92;
       const sp = Math.hypot(w.vx, w.vy);
-      // tetto di velocità alzato fino a ~3x vicino al mouse (pointerBoost 0→1), così la
-      // fuga in hover si vede davvero e non solo come uno scarto smorzato subito.
       const speedCap = MAX_SPEED * (1 + pointerBoost * 2);
       if (sp > speedCap) { w.vx = w.vx / sp * speedCap; w.vy = w.vy / sp * speedCap; }
-      // velocità corrente memorizzata (dopo il clamp): usata in render() per far comparire
-      // ondine/schiuma intorno a chi si sta muovendo — vedi buildPictogram/render.
       w.curSpeed = Math.hypot(w.vx, w.vy);
       w.phase += dt * (1.5 + w.curSpeed * 2);
 
@@ -419,19 +310,12 @@ function createWalkerLayer() {
   function render() {
     walkers!.forEach(w => {
       if (!w.dom) return;
-      // "respiro" autonomo: un piccolo scarto di posizione che oscilla per conto suo nel
-      // tempo (simT, non legato alla velocità reale dell'omino), fase/frequenza diverse per
-      // ognuno — anche un omino praticamente fermo continua ad avere un filo di vita.
       const nGx = w.gx + Math.sin(simT * w.noiseFX + w.noiseAX) * NOISE_AMPL;
       const nGy = w.gy + Math.cos(simT * w.noiseFY + w.noiseAY) * NOISE_AMPL;
       const p = proj(nGx, nGy);
-      // vista dall'alto: rotazione di base fissata alla nascita (w.rot) più un piccolo
-      // ondeggiare autonomo (stesso principio del respiro, ma sull'angolo) — un po' di
-      // "vita" senza farli girare su loro stessi in modo innaturale.
       const rot = w.rot + Math.sin(simT * w.noiseFX * 0.6 + w.noiseAY) * 7;
       w.dom.g.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${rot.toFixed(1)}) scale(${WALKER_SCALE})`);
 
-      // ondine/schiuma: compaiono e crescono con la velocità corrente, invisibili da fermi.
       const spF = Math.min(1, (w.curSpeed || 0) / MAX_SPEED);
       const { wake, foamA, foamB, foamC } = w.dom;
       wake.setAttribute('opacity', (spF * 0.55).toFixed(2));
@@ -457,8 +341,6 @@ function createWalkerLayer() {
   }
 
   return {
-    // richiamato a ogni buildBoard(): il DOM svg viene svuotato e ricostruito da zero, ma lo
-    // STATO della simulazione (posizioni/velocità in walkers/groups) resta invariato — nessun "salto".
     mount(svg: SVGSVGElement) {
       mountedSvg = svg;
       const layer = el('g', { class: 'walker-layer' });
@@ -471,9 +353,8 @@ function createWalkerLayer() {
         started = true;
         svg.addEventListener('pointermove', (e: PointerEvent) => {
           pointerGrid = screenToGrid(e.clientX, e.clientY);
-          updatePointerRipple(e.clientX, e.clientY);
         });
-        svg.addEventListener('pointerleave', () => { pointerGrid = null; hidePointerRipple(); });
+        svg.addEventListener('pointerleave', () => { pointerGrid = null; });
         requestAnimationFrame(tick);
       }
     }
@@ -481,14 +362,10 @@ function createWalkerLayer() {
 }
 const WalkerLayer = createWalkerLayer();
 
-// ---- deriva lentissima del mosaico: sposta il punto di ancoraggio del pattern (in unità
-// di griglia, poi proiettato con la stessa skew di proj()) lungo un piccolo giro ellittico,
-// così le tessere sembrano "respirare"/muoversi appena invece di restare perfettamente
-// ferme — persiste indipendentemente da buildBoard() (che ricrea i <pattern> nel DOM a ogni
-// resize, ma con gli stessi id: qui basta ri-cercarli per id a ogni frame).
-const SEA_DRIFT_AMPL = 5;      // unità di griglia — piccolo apposta ("leggermente")
-const SEA_DRIFT_PERIOD_X = 46; // secondi per un giro completo sull'asse x
-const SEA_DRIFT_PERIOD_Y = 63; // periodo diverso sull'asse y, così il moto non si ripete in loop visibile
+// ---- deriva lentissima del mosaico
+const SEA_DRIFT_AMPL = 5;
+const SEA_DRIFT_PERIOD_X = 46;
+const SEA_DRIFT_PERIOD_Y = 63;
 let seaDriftT0: number | null = null;
 function tickSeaDrift(tMs: number) {
   if (seaDriftT0 === null) seaDriftT0 = tMs;
@@ -504,14 +381,8 @@ function tickSeaDrift(tMs: number) {
   requestAnimationFrame(tickSeaDrift);
 }
 
-// ---- onda del mare: guidata via JS (stesso principio di tickSeaDrift sopra), NON più via
-// <animate> SMIL sull'attributo "scale" del feDisplacementMap. Il giro precedente usava SMIL,
-// ma non è affidabile ovunque (dipende dal supporto SMIL del browser sui filtri SVG) — un
-// rAF che scrive direttamente l'attributo funziona sempre, stessa garanzia già usata per la
-// deriva del mosaico.
-// più veloce (7s -> 3.2s) e ampiezza leggermente maggiore — "vorrei che fosse più evidente
-// il movimento", richiesto esplicitamente ("immagino basti farlo più veloce").
-const SEA_WAVE_MIN = 8, SEA_WAVE_MAX = 54, SEA_WAVE_PERIOD = 3.2; // secondi per un giro completo
+// ---- onda del mare
+const SEA_WAVE_MIN = 8, SEA_WAVE_MAX = 54, SEA_WAVE_PERIOD = 3.2;
 let seaWaveT0: number | null = null;
 function tickSeaWave(tMs: number) {
   if (seaWaveT0 === null) seaWaveT0 = tMs;
@@ -523,38 +394,7 @@ function tickSeaWave(tMs: number) {
   requestAnimationFrame(tickSeaWave);
 }
 
-// ---- "griglia topografica" v2: corretto un difetto del giro precedente — gli inserti
-// (allora anelli/badge liberi) potevano cadere ovunque, senza rispettare i quadrati della
-// griglia del mosaico. Ora SOLO due motivi (righine diagonali, pallini), e ognuno è
-// confinato dentro UN quadrato preciso della griglia — mai a cavallo del bordo.
-// Il quadrato "griglia" è lo stesso della trama del mosaico: MOSAIC_CELL/MOSAIC_SUB = 24
-// unità di gx/gy — un quadrato va quindi da (gx0,gy0) a (gx0+24,gy0+24), allineato
-// all'origine (0,0) come il mosaico stesso.
-// (l'entità IA "monolite" sull'isola di Nicole — pittogramma SVG placeholder in stile
-// HAL 9000 — è stata rimossa: Nicole ha generato un'immagine vera con Gemini, che
-// prenderà il suo posto. Quando arriva il file, va inserito qui come overlay sull'isola
-// number:4, sullo stesso principio — vedi git history per il codice del pittogramma se
-// serve come riferimento nel frattempo.)
-
-// ---- mini-isole/terreni decorativi sparsi in acqua aperta: NON cliccabili, desaturati
-// (grayscale via CSS — vedi classe .mini-island), scelti a mano per stare lontani dalle
-// 5 isole principali e dai quadrati della griglia topografica. Per ora sono placeholder
-// disegnati in SVG (nessuno strumento di generazione immagini disponibile in questa
-// sessione); quando arrivano le immagini vere generate con Gemini (vedi prompt fornito
-// ad Andrea), ogni entry qui sotto va convertita in un <img>/foreignObject come le isole
-// principali, mantenendo la stessa posizione (gx/gy) e la stessa classe .mini-island per
-// il filtro di desaturazione — il resto del codice non cambia.
-// raddoppiata su richiesta esplicita ("grandi il doppio").
 const MINI_ISLAND_SCALE = 260;
-// tutte e 10 hanno ora l'immagine vera generata da Andrea con Gemini — niente più
-// placeholder procedurali. rot:0 su tutte (foto fotorealistiche, non poligoni astratti:
-// ruotarle sembra sbagliato, come da richiesta). imgAspect solo dove diverso dal formato
-// standard ~700x382 usato dalla maggior parte delle immagini.
-// posizioni rimescolate ("cambiare la posizione alle isolette", richiesto): stesso
-// metodo di prima (fuori dal riquadro di ogni isola grande, con margine, più uno scarto
-// minimo tra tutti gli elementi decorativi — isolette E oggetti insieme, stesso pool di
-// spaziatura) ma disposizione nuova, non solo "più spostata" — vedi script di supporto
-// usato per generarle, non incluso nel progetto.
 const MINI_ISLANDS: Array<{ gx: number; gy: number; variant: number; size: number; rot: number; img?: string; imgAspect?: number }> = [
   { gx: 304, gy: 143, variant: 0, size: 1.0, rot: 0, img: '/assets/mini-islands/reef.png' },
   { gx: 491, gy: -435, variant: 2, size: 0.85, rot: 0, img: '/assets/mini-islands/volcano.png', imgAspect: 700 / 284 },
@@ -567,8 +407,6 @@ const MINI_ISLANDS: Array<{ gx: number; gy: number; variant: number; size: numbe
   { gx: 183, gy: -162, variant: 0, size: 0.8, rot: 0, img: '/assets/mini-islands/dunegrass.png', imgAspect: 1 },
   { gx: -260, gy: 398, variant: 2, size: 1.0, rot: 0, img: '/assets/mini-islands/icefloe.png' },
 ];
-// 4 "varianti" di sagoma (poligono irregolare con raggio diverso per vertice), per un
-// po' di diversità di forma senza dover disegnare 10 pittogrammi a mano.
 const MINI_VARIANTS = [
   [3.6, 4.4, 3.2, 4.8, 3.4, 4.0],
   [4.6, 3.0, 4.2, 3.6, 4.8, 2.8],
@@ -576,32 +414,21 @@ const MINI_VARIANTS = [
   [4.0, 4.2, 3.6, 3.0, 4.4, 3.8],
 ];
 const MINI_FILLS = ['#b9ae95', '#9aa39c', '#8a9a7c', '#c9d6d6'];
-// aspect ratio (larghezza/altezza) delle immagini generate con Gemini per le mini-isole:
-// stessa inquadratura per tutte (~700x382), quindi un solo valore va bene per tutte.
 const MINI_IMG_ASPECT = 700 / 382;
 function buildMiniIsland(mi: { gx: number; gy: number; variant: number; size: number; rot: number; img?: string; imgAspect?: number }) {
   const p = proj(mi.gx, mi.gy);
   const scale = MINI_ISLAND_SCALE * mi.size;
   const g = el('g', { class: 'mini-island', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${mi.rot}) scale(${scale.toFixed(1)})` });
   if (mi.img) {
-    // immagine vera (fotorealistica, stesso stile delle isole): niente poligono/speckle
-    // procedurali — solo l'immagine, centrata sull'ancora, più un'ombra leggera sotto le
-    // radici. Larghezza fissa in unità locali (14: ancora più grande, su richiesta),
-    // altezza derivata dall'aspect ratio della sorgente (imgAspect per-entry se diverso
-    // dal formato standard).
-    // niente più ombra sotto: a taglia grande risultava storta/disallineata — tolta del
-    // tutto su richiesta esplicita ("non mettere ombre storte, anzi non metterle proprio").
     const W = 14, H = W / (mi.imgAspect || MINI_IMG_ASPECT);
     const img = el('image', { href: mi.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
     g.appendChild(img);
     return g;
   }
-  // "!": l'indice è sempre in range (modulo sulla lunghezza dell'array) — TS non riesce a
-  // dedurlo da solo con noUncheckedIndexedAccess attivo.
   const radii = MINI_VARIANTS[mi.variant % MINI_VARIANTS.length]!;
   const pts = radii.map((r, i) => {
     const a = (Math.PI * 2 * i) / radii.length;
-    return `${(Math.cos(a) * r).toFixed(2)},${(Math.sin(a) * r * 0.62).toFixed(2)}`; // *0.62: appiattita, vista dall'alto in leggera prospettiva
+    return `${(Math.cos(a) * r).toFixed(2)},${(Math.sin(a) * r * 0.62).toFixed(2)}`;
   }).join(' ');
   const land = el('polygon', { points: pts, fill: MINI_FILLS[mi.variant % MINI_FILLS.length], stroke: 'rgba(30,30,25,0.35)', 'stroke-width': 0.15 });
   const speck1 = el('circle', { cx: -radii[0]! * 0.3, cy: 0.3, r: 0.5, fill: 'rgba(40,35,30,0.28)' });
@@ -615,28 +442,9 @@ function buildMiniIslandsLayer() {
   return g;
 }
 
-// ---- "oggettini" del mare (barche/boe Argo/detriti/balene): STATICI, non animati, non
-// cliccabili — al contrario degli omini restano fermi nella loro posizione, come le
-// isole/mini-isole. Anche qui, per ora, placeholder SVG (stessa sagoma usata nel round
-// precedente, quando erano ancora parte della simulazione omini): niente strumento di
-// generazione immagini disponibile in questa sessione. Quando arrivano le immagini vere
-// (stesso stile fotorealistico delle isole, vedi prompt fornito ad Andrea), ogni entry va
-// convertita in un <img>/foreignObject, stessa posizione — NON desaturate come le
-// mini-isole: questi sono oggetti "in scena", non texture di sfondo.
-// ATTENZIONE dimensioni: i valori qui sotto NON sono più quelli tarati sulle vecchie sagome
-// procedurali (quel giro dava oggetti larghi 2-7px a schermo — di fatto invisibili, bug
-// scoperto solo con uno zoom reale sullo screenshot, non dai soli bounding-box). Ritarati
-// per una taglia effettivamente visibile: boat/whale più in vista, argo/debris più piccoli
-// ma comunque leggibili come sagoma, non puntini.
-// raddoppiati su richiesta esplicita ("grandi il doppio").
 const SEA_SCALE: Record<string, number> = { boat: 144, argo: 200, debris: 190, whale: 140 };
-// larghezza dell'immagine in unità locali — invariata: è SEA_SCALE (sopra) che ora dà la
-// taglia finale visibile.
 const SEA_IMG_W: Record<string, number> = { boat: 13, argo: 5.5, debris: 4.5, whale: 19 };
 const SEA_IMG_ASPECT = 600 / 327;
-// posizioni rimescolate — stessa revisione di MINI_ISLANDS sopra, vedi commento lì
-// (isolette e oggetti condividono lo stesso pool di spaziatura, quindi vanno rilette
-// insieme, non separatamente).
 const SEA_OBJECTS: Array<{ type: string; gx: number; gy: number; rot: number; color?: string; variant?: string; img?: string; imgAspect?: number }> = [
   { type: 'boat', gx: 88, gy: 151, rot: 15, color: '#7a4a2b', img: '/assets/sea-objects/boat1.png' },
   { type: 'boat', gx: 431, gy: 240, rot: -40, color: '#54606b', img: '/assets/sea-objects/boat2.png', imgAspect: 600 / 335 },
@@ -650,21 +458,12 @@ function buildSeaObject(so: { type: string; gx: number; gy: number; rot: number;
   const p = proj(so.gx, so.gy);
   const scale = SEA_SCALE[so.type];
   const g = el('g', { class: 'sea-object', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${so.rot}) scale(${scale})` });
-  // wrapper interno per il "galleggiamento": la posizione/rotazione/scala restano fisse sul
-  // <g> esterno, il bob/ondeggiamento via CSS va sull'interno (vedi .sea-object-float).
-  // durata/ritardo variano per oggetto (dedotti dalla posizione, deterministico) così non
-  // ondeggiano tutti in sincrono.
   const seed = Math.abs(so.gx * 7 + so.gy * 13) % 100;
   const dur = (3.2 + (seed % 17) / 10).toFixed(2);
   const delay = (-(seed % 29) / 10).toFixed(2);
   const float = el('g', { class: 'sea-object-float', style: `animation-duration:${dur}s;animation-delay:${delay}s;` });
   g.appendChild(float);
-  // niente più ombra sotto: a taglia grande risultava storta/disallineata — tolta del tutto
-  // su richiesta esplicita ("non mettere ombre storte, anzi non metterle proprio").
   if (so.img) {
-    // immagine vera: stesso schema delle mini-isole, larghezza in unità locali da
-    // SEA_IMG_W (per tipo), altezza dall'aspect ratio della sorgente.
-    // "!": so.type è sempre una delle chiavi note di SEA_IMG_W (boat/argo/debris/whale).
     const W = SEA_IMG_W[so.type]!, H = W / (so.imgAspect || SEA_IMG_ASPECT);
     const img = el('image', { href: so.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
     float.appendChild(img);
@@ -709,24 +508,9 @@ function buildSeaObjectsLayer() {
   return g;
 }
 
-// --- Animali strani, in scena come SEA_OBJECTS (statici, a colori, non cliccabili) ---
-// Stessa logica delle mini-isole: rot:0 fisso già da ora (immagini fotorealistiche in
-// arrivo da Gemini, ruotarle sembrerebbe sbagliato) e supporto img/imgAspect pronto per
-// quando arrivano le immagini vere — placeholder procedurale (sagoma generica) nel
-// frattempo. ANIMAL_SCALE = fattore di scala del <g> esterno (unico, uguale per
-// placeholder e immagine vera). ANIMAL_IMG_W = larghezza dell'immagine in unità locali,
-// pensata per dare una taglia finale comparabile al placeholder che sostituisce (corpo
-// rx:2.2 → diametro ~4.4).
-// stesso discorso di SEA_SCALE sopra: 34 dava creature larghe 4-7px a schermo, invisibili.
-// 150 restava ancora "quasi non si vedono" (richiesta esplicita) — ritarato più su, poi
-// raddoppiato di nuovo ("grandi il doppio").
 const ANIMAL_SCALE = 520;
 const ANIMAL_IMG_W = 4.6;
 const ANIMAL_IMG_ASPECT = 600 / 327;
-// raddoppiati (ogni specie compare 2 volte, posizioni diverse) e più sparsi in acqua aperta
-// — richiesto esplicitamente ("fanne il doppio... falli più sparsi").
-// stessa revisione di posizioni di SEA_OBJECTS sopra ("più distanti tra loro e dalle
-// isole grosse") — vedi commento lì.
 const ANIMALS: Array<{ gx: number; gy: number; rot: number; size: number; color: string; img?: string; imgAspect?: number }> = [
   { gx: 163, gy: 395, rot: 0, size: 1.0, color: '#8a6a9c', img: '/assets/animals/narwhalopus.png' },
   { gx: -239, gy: 418, rot: 0, size: 0.85, color: '#4a7a6a', img: '/assets/animals/turtlejelly.png' },
@@ -743,22 +527,17 @@ function buildAnimal(a: { gx: number; gy: number; rot: number; size: number; col
   const p = proj(a.gx, a.gy);
   const scale = ANIMAL_SCALE * a.size;
   const g = el('g', { class: 'animal', transform: `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${a.rot}) scale(${scale.toFixed(1)})` });
-  // stesso wrapper "float" degli oggetti del mare, per il galleggiamento via CSS.
   const seed = Math.abs(a.gx * 11 + a.gy * 17) % 100;
   const dur = (3.4 + (seed % 15) / 10).toFixed(2);
   const delay = (-(seed % 23) / 10).toFixed(2);
   const float = el('g', { class: 'animal-float', style: `animation-duration:${dur}s;animation-delay:${delay}s;` });
   g.appendChild(float);
-  // niente più ombra sotto: a taglia grande risultava storta/disallineata — tolta del tutto
-  // su richiesta esplicita ("non mettere ombre storte, anzi non metterle proprio").
   if (a.img) {
     const W = ANIMAL_IMG_W, H = W / (a.imgAspect || ANIMAL_IMG_ASPECT);
     const img = el('image', { href: a.img, x: (-W / 2).toFixed(2), y: (-H / 2).toFixed(2), width: W.toFixed(2), height: H.toFixed(2), preserveAspectRatio: 'xMidYMid meet' });
     float.appendChild(img);
     return g;
   }
-  // placeholder generico: corpo + coda + due "appendici" stravaganti + occhio, così da
-  // suggerire "creatura strana" senza dover disegnare 5 animali diversi a mano.
   const body = el('ellipse', { cx: 0, cy: 0, rx: 2.2, ry: 1.3, fill: a.color, stroke: 'rgba(20,20,15,0.35)', 'stroke-width': 0.15 });
   const tail = el('path', { d: 'M 2.1,0 Q 3.4,-0.9 3.8,-1.6 Q 3.2,-0.1 3.8,1.6 Q 3.4,0.9 2.1,0 Z', fill: a.color, opacity: 0.85 });
   const fin1 = el('path', { d: 'M -0.6,-1.1 Q -1.3,-2.2 -0.3,-2.4 Q 0.4,-1.6 -0.6,-1.1 Z', fill: a.color, opacity: 0.7 });
@@ -778,8 +557,6 @@ function buildBoard() {
   if (!svg || !props.houses.length) return;
   svg.innerHTML = "";
 
-  // ---- bounding box "di contenuto" (isole + margine) — porting diretto dei valori
-  // trovati via ricerca Python per il layout a 5 isole (vedi app/data/islandLayout.ts).
   const { gxMin: gxMin0, gxMax: gxMax0, gyMin: gyMin0, gyMax: gyMax0 } = props.gridBounds;
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   const corners: Array<[number, number]> = [[gxMin0, gyMin0], [gxMax0, gyMin0], [gxMax0, gyMax0], [gxMin0, gyMax0]];
@@ -790,14 +567,10 @@ function buildBoard() {
   });
   const pad = 30;
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-  // vista "zoomata" sul centro: i bordi più esterni escono leggermente dalla cornice —
-  // 0.752 è il valore trovato via ricerca Python che lascia ALMENO il 55% di ogni isola visibile.
   const CROP_FACTOR = 0.752;
   const contentW = ((maxX - minX) + pad * 2) * CROP_FACTOR;
   const contentH = ((maxY - minY) + pad * 2) * CROP_FACTOR;
 
-  // il viewBox deve avere ESATTAMENTE le proporzioni del contenitore reale, altrimenti
-  // preserveAspectRatio lascia bande vuote senza mare ai lati.
   const wrapRect = svg.getBoundingClientRect();
   const ar = wrapRect.width && wrapRect.height ? wrapRect.width / wrapRect.height : contentW / contentH;
   let vbW = contentW, vbH = contentH;
@@ -806,29 +579,15 @@ function buildBoard() {
   svg.setAttribute('viewBox', `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
 
-  // ---- scala px-schermo/unità-griglia-proiettata: con le isole il viewBox copre un'area
-  // enorme in unità di griglia (~0.05 px-schermo per unità), quindi un font-size "13" in
-  // stile CSS sul <text> dell'SVG (che vale 13 UNITÀ DI GRIGLIA, non 13px reali) risulta di
-  // fatto invisibile (<1px a schermo) — badge/didascalia usano dimensioni calcolate da questa
-  // scala, non valori fissi, così restano leggibili qualunque sia la dimensione della finestra.
   const pxPerUnit = wrapRect.width / vbW;
   const CAP_FONT = 14 / pxPerUnit;
   const CAP_STROKE = 3 / pxPerUnit;
   const CAP_GAP = 16 / pxPerUnit;
 
-  // ---- MARE "piscina": mosaico di tessere allineato via patternTransform (proj() è
-  // lineare, quindi si esprime come matrix() SVG — vedi disco-mockup/index.html per la
-  // spiegazione completa), tre profondità (deep/mid/shallow) a gradini/spigoli intorno a
-  // ogni isola, wobble "dipinto a mano" e grana per toglierlo dalla resa piatta/digitale.
-  // griglia più grande in mobile ("la griglia la voglio più grande" — richiesta esplicita):
-  // stesso mosaico, ma tessere più larghe così si legge meglio su schermo piccolo.
   const isMobileView = wrapRect.width > 0 && wrapRect.width <= 760;
   const MOSAIC_CELL = isMobileView ? 176 : 96;
   const MOSAIC_SUB = 4;
   const projMatrix = `matrix(${GX_X},${GX_Y},${-GY_X},${GY_Y},0,0)`;
-  // stroke-width irregolare per tassello (non più un valore fisso): righe di grout un po'
-  // più larghe, un po' più sottili — "onde più irregolari come larghezza di stroke",
-  // richiesto esplicitamente. Seed fisso per rendering, ricalcolato solo ad ogni rebuild.
   function mosaicTilesSVG(sub: number, baseFill: string, accentFill: string, accentCells: number[][], groutColor: string, groutW: number) {
     const s = MOSAIC_CELL / sub;
     let out = '';
@@ -852,43 +611,19 @@ function buildBoard() {
     <pattern id="mosaicShallow" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
       ${mosaicTilesSVG(MOSAIC_SUB, '#8aa3d6', '#7590c6', [[1, 0], [2, 3]], '#f7faff', 2.6)}
     </pattern>`;
-  // "seaWobble": tre passaggi in catena. Il primo (statico, seed fisso) è il vecchio wobble
+  // "seaWobble": due passaggi in catena. Il primo (statico, seed fisso) è il wobble
   // "dipinto a mano" — le linee non sono perfettamente rette come il resto della board (case/
   // isole restano nitide, solo il mare "respira"). Il secondo è un'onda vera: stessa idea ma
-  // con la "scale" di feDisplacementMap animata via <animate> SMIL (nessun JS extra), così la
+  // con la "scale" di feDisplacementMap animata via JS (vedi tickSeaWave), così la
   // griglia/grout più spessa ondeggia lentamente avanti e indietro come schiuma sull'acqua.
-  // Il terzo ("il cursore deforma la griglia", richiesto) è una mappa di spostamento LOCALE:
-  // una <feImage> con una sfumatura radiale come sorgente, la cui posizione (x/y) viene
-  // aggiornata via JS a ogni pointermove (vedi updatePointerRipple più sotto) — dove la
-  // sfumatura è "accesa" la griglia si piega, altrove (trasparente) resta come prima. Nessun
-  // ricalcolo del pattern: solo x/y della feImage cambiano, il resto lo fa la GPU via
-  // feDisplacementMap. NB: la sorgente è una vera immagine esterna (data-URI SVG), non un
-  // riferimento a un elemento locale (<feImage href="#id">) — quella tecnica, provata prima,
-  // non viene renderizzata in modo affidabile da Chromium quando l'elemento sorgente vive
-  // dentro <defs> (nessun errore in console, ma nessuna deformazione visibile).
-  const pointerRippleSrc = encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${POINTER_RIPPLE_SIZE}" height="${POINTER_RIPPLE_SIZE}">
-      <defs><radialGradient id="g">
-        <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
-        <stop offset="60%" stop-color="#fff" stop-opacity="0.6"/>
-        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
-      </radialGradient></defs>
-      <circle cx="${POINTER_RIPPLE_SIZE / 2}" cy="${POINTER_RIPPLE_SIZE / 2}" r="${POINTER_RIPPLE_SIZE / 2}" fill="url(#g)"/>
-    </svg>`
-  );
+  // (la terza fase, deformazione locale al passaggio del mouse, è stata rimossa su richiesta).
   const handWobbleSVG = `
     <filter id="seaWobble" x="-20%" y="-20%" width="140%" height="140%">
       <feTurbulence type="fractalNoise" baseFrequency="0.010" numOctaves="2" seed="7" result="handN"/>
       <feDisplacementMap in="SourceGraphic" in2="handN" scale="55" xChannelSelector="R" yChannelSelector="G" result="handWobbled"/>
       <feTurbulence type="fractalNoise" baseFrequency="0.020" numOctaves="2" seed="21" result="waveN"/>
-      <feDisplacementMap id="waveDisp" in="handWobbled" in2="waveN" scale="28" xChannelSelector="R" yChannelSelector="G" result="waved"/>
-      <feImage id="pointerRippleImg" x="-99999" y="-99999" width="${POINTER_RIPPLE_SIZE}" height="${POINTER_RIPPLE_SIZE}" href="data:image/svg+xml,${pointerRippleSrc}" result="pointerDot"/>
-      <feGaussianBlur in="pointerDot" stdDeviation="10" result="pointerBlur"/>
-      <feDisplacementMap in="waved" in2="pointerBlur" scale="90" xChannelSelector="R" yChannelSelector="R"/>
+      <feDisplacementMap id="waveDisp" in="handWobbled" in2="waveN" scale="28" xChannelSelector="R" yChannelSelector="G"/>
     </filter>`;
-  // grana animata: un feOffset tra la turbolenza e il color-matrix, con dx/dy che
-  // "camminano" lentamente via <animate> SMIL nativo (nessun JS extra, nessun ricalcolo
-  // del rumore stesso) — la grana sembra viva/respirare invece di essere ferma.
   const seaGrainSVG = `
     <filter id="seaGrain" x="-20%" y="-20%" width="140%" height="140%">
       <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="3" stitchTiles="stitch" result="noise"/>
@@ -902,8 +637,6 @@ function buildBoard() {
   defs.innerHTML = mosaicDeepSVG + mosaicMidSVG + mosaicShallowSVG + handWobbleSVG + seaGrainSVG;
   svg.appendChild(defs);
 
-  // contorno "a gradini/spigoli" (non ellisse liscia) per gli scalini del mare intorno a
-  // ogni isola — stessa tecnica generalizzata già usata per il vecchio lotto a scacchiera.
   const STEP_CELL = 24;
   function insideCellSet(insideTest: (x: number, y: number) => boolean, ox: number, oy: number, gxMin: number, gxMax: number, gyMin: number, gyMax: number, cell: number) {
     const cells = new Set<string>();
@@ -916,16 +649,12 @@ function buildBoard() {
     }
     return cells;
   }
-  // tipi a tupla fissa (non number[][]/number[]): così destrutturare un punto o un edge
-  // resta un array di lunghezza nota per TS, niente "possibly undefined" per ogni [0]/[1].
   type Pt = [number, number];
   type Edge = [Pt, Pt];
   function traceStepBoundary(cells: Set<string>, cell: number): Pt[] | null {
     const has = (gx: number, gy: number) => cells.has(gx + ',' + gy);
     const edges: Edge[] = [];
     cells.forEach(key => {
-      // "as [number,number]": ogni key è sempre nel formato "gx,gy" (due parti), per
-      // costruzione — vedi insideCellSet() più sopra, unico posto che popola "cells".
       const [gx, gy] = key.split(',').map(Number) as [number, number];
       if (!has(gx - cell, gy)) edges.push([[gx, gy], [gx, gy + cell]]);
       if (!has(gx + cell, gy)) edges.push([[gx + cell, gy], [gx + cell, gy + cell]]);
@@ -943,8 +672,6 @@ function buildBoard() {
     });
     const ek = (a: Pt, b: Pt) => { const ka = pk(a), kb = pk(b); return ka < kb ? ka + '|' + kb : kb + '|' + ka; };
     const used = new Set<string>();
-    // "!": appena sopra si esce con "return null" quando edges è vuoto, quindi qui c'è
-    // sempre almeno un edge.
     const start = edges[0]![0]!;
     const path = [start];
     let cur = start;
@@ -970,10 +697,6 @@ function buildBoard() {
   }
   const seaG = el('g', { filter: 'url(#seaWobble)' });
   seaG.appendChild(el('rect', { x: vbX.toFixed(1), y: vbY.toFixed(1), width: vbW.toFixed(1), height: vbH.toFixed(1), fill: 'url(#mosaicDeep)' }));
-  // gli "scalini" chiari intorno a ogni isola grande vanno in un gruppo a parte
-  // (.main-island-steps), nascosto in mobile insieme alle isole stesse (.main-island): senza
-  // l'isola sopra, questi resterebbero macchie chiare senza motivo — "devono stare sotto
-  // alle isole, non a caso", richiesto esplicitamente.
   const islandStepsG = el('g', { class: 'main-island-steps' });
   seaG.appendChild(islandStepsG);
   props.houses.forEach(isl => {
@@ -999,25 +722,14 @@ function buildBoard() {
   grainRect.setAttribute('style', 'mix-blend-mode:multiply;pointer-events:none;');
   svg.appendChild(grainRect);
 
-  // ---- omini piatti: montati QUI, PRIMA delle isole, così nell'ordine di disegno SVG (chi
-  // viene dopo sta sopra) le isole finiscono sempre sopra agli omini — mai il contrario. Il
-  // DOM va ricreato a ogni rebuild, ma la simulazione (posizioni/velocità) persiste.
   WalkerLayer.mount(svg);
 
-  // ---- mini-isole/terreni decorativi, non cliccabili — vedi buildMiniIslandsLayer più
-  // sopra. Dopo gli omini (così coprono chi vi passa sotto) ma prima delle isole vere,
-  // che restano sempre l'elemento più in primo piano della board.
   svg.appendChild(buildMiniIslandsLayer());
 
-  // ---- "oggettini" del mare (barche/boe/detriti/balene): statici, non cliccabili — vedi
-  // buildSeaObjectsLayer più sopra.
   svg.appendChild(buildSeaObjectsLayer());
 
-  // ---- animali strani: statici, non cliccabili, a colori (non desaturati) — vedi
-  // buildAnimalsLayer più sopra.
   svg.appendChild(buildAnimalsLayer());
 
-  // ---- isole: PNG con terreno/nature/edifici già inclusi, appoggiate direttamente sul mare.
   props.houses.forEach(hs => {
     const corners = plotCorners(hs);
     const bx0 = Math.min(...corners.map(p => p.x)), bx1 = Math.max(...corners.map(p => p.x));
@@ -1039,14 +751,8 @@ function buildBoard() {
     const card = document.createElementNS(XHTMLNS, 'div');
     card.setAttribute('class', 'card');
     const img = document.createElementNS(XHTMLNS, 'img');
-    // Contentful Images API (?w=...&fm=webp): sui desktop board ogni isola è visibile
-    // contemporaneamente — 700px è già abbondante alla taglia con cui è disegnata qui.
     img.setAttribute('src', ctfImg(hs.image?.url, { w: 700 }) || '');
     img.setAttribute('alt', `${hs.title}, isola 0${hs.number}`);
-    // niente loading="lazy": dentro un <foreignObject> di un SVG con overflow:hidden
-    // l'euristica di lazy-load può non caricare mai l'immagine (bug già documentato).
-    // fase/durata del "galleggiamento" leggermente diverse per isola (delay negativo = parte
-    // già a metà ciclo), così non fluttuano tutte in sincrono — vedi @keyframes islandFloat.
     card.style.animationDelay = (-(hs.number * 1.7)).toFixed(1) + 's';
     card.style.animationDuration = (6.5 + (hs.number % 3) * 0.6).toFixed(1) + 's';
     card.appendChild(img);
@@ -1057,12 +763,6 @@ function buildBoard() {
     const wrap = el('g', { class: 'main-island' });
     wrap.appendChild(fo);
 
-    // il badge numerico ("01","02"...) sopra l'isola è stato tolto: non si vogliono più
-    // numeri visibili in homepage. Il numero resta comunque nell'aria-label del bottone
-    // (accessibilità) e nel CMS, semplicemente non si disegna più sull'SVG.
-
-    // didascalia, sotto l'isola: SOLO il titolo, sempre visibile (prima appariva solo in
-    // hover, e con "Isola 0N —" davanti).
     const cap = el('text', { x: bx0 + bw / 2, y: (by1 + CAP_GAP).toFixed(1), 'text-anchor': 'middle', class: 'house-cap' });
     cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px; stroke-width:${CAP_STROKE.toFixed(2)}px`);
     cap.textContent = hs.title;
@@ -1092,26 +792,14 @@ watch(() => props.houses, buildBoard, { deep: true });
 </script>
 
 <style>
-/* stile globale (non scoped): il board viene costruito imperativamente nel DOM via JS,
-   Vue's scoped CSS non raggiungerebbe i nodi creati con createElementNS/createElement */
 .board-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
 .board-wrap{ flex:1 1 auto; min-height:0; display:flex; }
 #board-svg{ display:block; width:100%; height:100%; }
 
-/* mini-isole/terreni decorativi: desaturati e un filo spenti, così restano sullo sfondo e
-   non competono con le 5 isole vere (a colori, interattive, sempre più in primo piano).
-   pointer-events:none — per sicurezza, anche se non hanno già nessun bottone/handler: non
-   devono MAI intercettare hover/click destinati al mare/agli omini sotto. */
 .mini-island{ filter:grayscale(1) brightness(0.94) contrast(1.05); opacity:0.82; pointer-events:none; }
 
-/* "oggettini" del mare (barche/boe/detriti/balene): statici, non cliccabili, ma NON
-   desaturati come le mini-isole — sono oggetti "in scena", a colori come le isole. */
 .sea-object{ pointer-events:none; }
 .animal{ pointer-events:none; }
-/* galleggiamento: piccolo bob verticale + rollio, per dare l'idea che animali e oggetti
-   siano in acqua (e non semplicemente "appoggiati"). Durata/ritardo per-istanza sono
-   impostati inline (vedi buildSeaObject/buildAnimal) così non ondeggiano in sincrono.
-   Unità: locali al <g> già scalato dal padre, quindi valori piccoli bastano. */
 .sea-object-float, .animal-float{
   animation-name: floatBob;
   animation-timing-function: ease-in-out;
@@ -1133,10 +821,6 @@ watch(() => props.houses, buildBoard, { deep: true });
 .house-btn:hover .house-frame, .house-btn:focus-visible .house-frame{ transform: translateY(-4%) scale(1.05); }
 .house-frame .card{
   width:100%; display:block;
-  /* le isole "fluttuano": un leggero bob verticale continuo sulla card (non sul frame, che
-     porta già l'animazione di hover — due transform sullo stesso elemento confliggerebbero).
-     Fase/durata leggermente diverse per isola (impostate via JS) così non fluttuano tutte
-     in sincrono. */
   animation: islandFloat 7s ease-in-out infinite;
 }
 @keyframes islandFloat{
@@ -1146,13 +830,9 @@ watch(() => props.houses, buildBoard, { deep: true });
 
 .house-frame img{
   width:100%; display:block;
-  /* isole = PNG a sfondo trasparente: ombra portata che segue la sagoma, le fa leggere
-     come oggetti che galleggiano sul mare (non un box-shadow rettangolare) */
   filter: drop-shadow(0 14px 18px rgba(5,20,25,0.45));
   transition: filter .35s ease;
 }
-/* in hover su un'isola, le altre si fanno più piccole e b/n — così l'isola sotto il mouse
-   "salta fuori" dal resto del tabellone invece di restare tutte allo stesso piano visivo. */
 .board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame{
   transform: scale(0.8);
 }
@@ -1164,9 +844,6 @@ watch(() => props.houses, buildBoard, { deep: true });
 }
 
 .house-badge{ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; fill:#efe9d8; }
-/* didascalia SEMPRE visibile sotto ogni isola (prima appariva solo in hover) — solo il
-   titolo dell'articolo (niente più "Isola 0N —"). paint-order+stroke bianco invece di un
-   text-shadow: resta leggibile sopra il mosaico del mare qualsiasi sia il tono di blu sotto. */
 .house-cap{
   font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
   font-weight:600;
@@ -1180,17 +857,9 @@ watch(() => props.houses, buildBoard, { deep: true });
 .house-hover .house-frame{ transform: translateY(-4%) scale(1.05); }
 
 .list{ display:none; }
-/* "solo il mare" per lo sfondo di About/Issues — a differenza della regola mobile qui
-   sotto (solo <=760px), questa si applica sempre quando IsoBoard riceve hideMainIslands. */
 .board-root.hide-main-islands .main-island,
 .board-root.hide-main-islands .main-island-steps{ display:none; }
 @media (max-width: 760px){
-  /* la board isometrica resta MONTATA anche in mobile — non più "display:none" — così lo
-     sfondo è la stessa scena del desktop (mare/mosaico, mini-isole, animali, oggetti,
-     omini) invece di un gradiente piatto. Diventa uno sfondo fisso a schermo intero,
-     dietro la lista di card: non cliccabile/non scrollabile di suo, e le isole grandi
-     cliccabili (.main-island) restano nascoste perché la navigazione qui è la lista, non i
-     tap sulla mappa. */
   .board-wrap{
     display:flex;
     position:fixed; inset:0;
@@ -1200,8 +869,6 @@ watch(() => props.houses, buildBoard, { deep: true });
   .main-island{ display:none; }
   .main-island-steps{ display:none; }
   .board-root{ min-height: 100%; }
-  /* padding-top più ampio: la topbar è "position:absolute" sopra tutto (icone 80px +
-     etichetta + padding verticale ≈ 130px) e prima la prima isola ci finiva sotto. */
   .list{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:28px; padding:150px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
   .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
   .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }

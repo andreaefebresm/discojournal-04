@@ -11,6 +11,7 @@ declare module "nitropack/types" {
     }
     '/api/houses/:slug': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/houses/[slug].get').default>>>>
+      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/houses/[slug]').default>>>>
     }
     '/api/issues': {
       'get': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/issues.get').default>>>>

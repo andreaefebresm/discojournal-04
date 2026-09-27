@@ -7,7 +7,9 @@ export default defineNuxtConfig({
   // Fraunces+Inter usata prima, richiesto esplicitamente ("voglio usare Valley Sans per
   // tutto"). È un font variabile (Thin→Black, con asse italico): un solo @import copre
   // tutti i pesi/stili usati nel CSS (normal/500/600/700, con font-style:italic dove serve
-  // — vedi .modal-excerpt, i blockquote, gli h3 — invece dei corsivi "veri" di Fraunces).
+  // — vedi .modal-excerpt, i blockquote, gli h3 — invece dei corsivi "veri" di Fraunces.
+  // IBM Plex Serif aggiunto per il "protocol font" (bold + unbold) usato sul testo marcato
+  // con il mark "Code" di Contentful — vedi CSS ":deep(code)" in HouseModal.vue/[slug].vue.
   app: {
     head: {
       link: [
@@ -15,7 +17,7 @@ export default defineNuxtConfig({
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap'
+          href: 'https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&family=IBM+Plex+Mono:wght@400;700&display=swap'
         }
       ]
     }

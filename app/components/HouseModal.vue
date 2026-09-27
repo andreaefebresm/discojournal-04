@@ -40,6 +40,13 @@
         <div class="modal-body">
           <p v-if="house.excerpt" class="modal-excerpt">{{ house.excerpt }}</p>
           <div v-html="bodyHtml"></div>
+          <!-- note a fine articolo ("footnotes", richiesto), font diverso dal corpo — vedi
+               CSS .modal-footnotes più sotto. Solo se il campo "footnotes" su Contentful è
+               compilato. -->
+          <div v-if="footnotesHtml" class="modal-footnotes">
+            <p class="modal-footnotes-label">Footnotes</p>
+            <div v-html="footnotesHtml"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -47,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import { renderArticleBody, renderFootnotes } from "../utils/article";
 
 const props = defineProps<{ house: any | null }>();
 const emit = defineEmits<{ close: [] }>();
@@ -92,36 +99,11 @@ const tiles = computed(() => {
   return list;
 });
 
-// mini-markdown per il corpo articolo, usato solo per l'array di paragrafi semplici (dati
-// locali di esempio): righe che iniziano con "## " diventano un sottotitolo (h3), righe che
-// iniziano con "> " diventano una citazione (blockquote), il resto un paragrafo normale — più
-// **grassetto**, *corsivo* e [link](url) inline. Il documento Rich Text di Contentful ha già
-// stili differenziati nativamente (documentToHtmlString li rende come h1-h6/blockquote/ecc.),
-// quindi non serve applicargli anche questo.
-function mdInline(s: string) {
-  return s
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-}
-function renderBody(paragraphs: string[]) {
-  return paragraphs.map(p => {
-    if (p.startsWith('## ')) return `<h3>${mdInline(p.slice(3))}</h3>`;
-    if (p.startsWith('> ')) return `<blockquote>${mdInline(p.slice(2))}</blockquote>`;
-    return `<p>${mdInline(p)}</p>`;
-  }).join('');
-}
-
-// house.body può essere: un documento Rich Text di Contentful, un array di paragrafi
-// semplici (dati locali di esempio), oppure assente — stessa logica di prima in
-// app/pages/articolo/[slug].vue (quella pagina resta, per link diretti).
-const bodyHtml = computed(() => {
-  const body = props.house?.body as any;
-  if (!body) return "";
-  if (Array.isArray(body)) return renderBody(body);
-  if (typeof body === "object" && body.nodeType === "document") return documentToHtmlString(body);
-  return String(body);
-});
+// corpo dell'articolo: concatena articleBody + articleBody2/3/4 (un solo articolo diviso su
+// più campi Rich Text perché troppo lungo per un campo solo, richiesto) — vedi
+// app/utils/article.ts. Le note a fine articolo sono un campo/blocco separato.
+const bodyHtml = computed(() => renderArticleBody(props.house));
+const footnotesHtml = computed(() => renderFootnotes(props.house));
 
 // Esc per chiudere — struttura neutra per ora, stile "The Sims" da decidere dopo.
 function onKey(e: KeyboardEvent) { if (e.key === "Escape" && props.house) emit("close"); }
@@ -225,7 +207,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
    lucido in alto (::before) + bevel inferiore, per farla leggere come una barra fisica
    (stile title-bar di un vecchio OS) invece di un blocco di colore piatto. */
 .modal-titlebar{
-  position:relative; z-index:1;
+  position:sticky; z-index:10;
   top:0;
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 28px;
@@ -301,4 +283,49 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 .modal-body em{ font-style:italic; }
 .modal-body a{ color:#8a5a2b; text-decoration:underline; text-underline-offset:2px; }
 .modal-body a:hover{ color:#b3752f; }
+
+/* ---- media incorporati nel Rich Text (immagini/gif/video) — "grandi come la finestra
+   dell'articolo" (richiesto): piena larghezza della colonna di testo, non della viewport.
+   Vedi app/utils/article.ts → renderEmbeddedAsset per come nasce il markup .rt-media. */
+.modal-body .rt-media{ margin: 24px 0; }
+.modal-body .rt-media img,
+.modal-body .rt-media video{ display:block; width:100%; height:auto; border-radius:4px; }
+.modal-body .rt-file{ margin: 16px 0; }
+
+/* ---- "protocol font": in Contentful si applica il mark nativo "Code" (icona </> nella
+   toolbar Rich Text — nessun Content Type nuovo, disponibile a qualsiasi Editor) al testo
+   del protocollo/messaggio finale di un articolo (caso d'uso iniziale: l'articolo di
+   Nicole). IBM Plex Serif scelto per coerenza con il fallback "Roboto Serif" indicato —
+   se invece serve l'effetto "da terminale" (monospace) del documento originale, basta
+   cambiare questo font-family in "IBM Plex Mono" (va comunque aggiunta a nuxt.config.ts
+   se non già presente). Bold/unbold: applica anche il mark "Bold" di Contentful sullo
+   stesso testo, eredita font-weight normalmente da <strong>. */
+.modal-body :deep(code),
+.modal-body :deep(h5){
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-weight: 400;
+  font-style: normal;
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  letter-spacing: .01em;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+/* ---- note a fine articolo ("footnotes", richiesto) — font diverso dal corpo, separate da
+   un filo superiore, come un vero blocco di note e non una continuazione del testo. */
+.modal-footnotes{
+  margin-top: 32px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(40,30,15,0.16);
+}
+.modal-footnotes-label{
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 11px; letter-spacing:.12em; text-transform:uppercase;
+  color:#b0a98f; margin:0 0 10px;
+}
+.modal-footnotes :deep(p){
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 13px; line-height:1.6; color:#6b6558; margin:0 0 8px;
+}
 </style>

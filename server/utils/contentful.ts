@@ -36,6 +36,16 @@ type MappedHouse = {
   excerpt: string;
   image: MappedImage | null;
   body: unknown;
+  // articolo diviso su più campi Rich Text perché troppo lungo per un campo solo
+  // ("l'articolo è lungo 500000 caratteri", richiesto) — i campi su Contentful si chiamano
+  // articleBody/articleBody2/articleBody3/articleBody4, qui diventano body/body2/body3/body4.
+  // Tutti opzionali: un articolo "corto" compila solo articleBody, gli altri restano null.
+  body2: unknown;
+  body3: unknown;
+  body4: unknown;
+  // campo Rich Text separato per le note a fine articolo ("footnotes con font diverso",
+  // richiesto) — vedi app/utils/article.ts per come vengono renderizzate.
+  footnotes: unknown;
   published: boolean;
 };
 
@@ -57,6 +67,10 @@ export function mapHouseEntry(entry: Entry<any>): MappedHouse {
         }
       : null,
     body: f.articleBody || null, // documento Rich Text di Contentful, o null se non compilato
+    body2: f.articleBody2 || null,
+    body3: f.articleBody3 || null,
+    body4: f.articleBody4 || null,
+    footnotes: f.footnotes || null,
     published: f.published !== false
   };
 }

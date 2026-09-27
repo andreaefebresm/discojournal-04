@@ -6,43 +6,28 @@
     <img v-if="house.image" :src="ctfImg(house.image.url, { w: 1200 })" :alt="house.title" class="hero" loading="lazy" decoding="async" />
     <p v-if="house.excerpt" class="excerpt">{{ house.excerpt }}</p>
     <div class="body" v-html="bodyHtml"></div>
+    <!-- note a fine articolo ("footnotes", richiesto), font diverso dal corpo — stesso
+         trattamento del modal (.modal-footnotes) per coerenza tra le due viste. -->
+    <div v-if="footnotesHtml" class="footnotes">
+      <p class="footnotes-label">Footnotes</p>
+      <div v-html="footnotesHtml"></div>
+    </div>
   </article>
   <p v-else-if="pending" class="note">Caricamento…</p>
   <p v-else class="note">Articolo non trovato.</p>
 </template>
 
 <script setup lang="ts">
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import { renderArticleBody, renderFootnotes } from "../../utils/article";
 
 const route = useRoute();
 const { data: house, pending } = await useFetch(`/api/houses/${route.params.slug}`);
 
-// stessa mini-sintassi di HouseModal.vue: "## " -> sottotitolo, "> " -> citazione,
-// **grassetto**/*corsivo*/[link](url) inline — solo per l'array di paragrafi semplici (dati
-// locali di esempio). Il Rich Text di Contentful ha già stili differenziati nativamente.
-function mdInline(s: string) {
-  return s
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-}
-function renderBody(paragraphs: string[]) {
-  return paragraphs.map(p => {
-    if (p.startsWith('## ')) return `<h3>${mdInline(p.slice(3))}</h3>`;
-    if (p.startsWith('> ')) return `<blockquote>${mdInline(p.slice(2))}</blockquote>`;
-    return `<p>${mdInline(p)}</p>`;
-  }).join('');
-}
-
-// house.body può essere: un documento Rich Text di Contentful (oggetto con nodeType "document"),
-// un array di paragrafi semplici (i dati locali di esempio), oppure assente.
-const bodyHtml = computed(() => {
-  const body = house.value?.body as any;
-  if (!body) return "";
-  if (Array.isArray(body)) return renderBody(body);
-  if (typeof body === "object" && body.nodeType === "document") return documentToHtmlString(body);
-  return String(body);
-});
+// corpo dell'articolo: concatena articleBody + articleBody2/3/4 (un solo articolo diviso su
+// più campi Rich Text perché troppo lungo per un campo solo, richiesto) — vedi
+// app/utils/article.ts, condiviso con HouseModal.vue.
+const bodyHtml = computed(() => renderArticleBody(house.value));
+const footnotesHtml = computed(() => renderFootnotes(house.value));
 </script>
 
 <style scoped>
@@ -62,5 +47,44 @@ h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
    about.vue). */
 .body :deep(h3){ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-style:italic; font-weight:normal; font-size:20px; margin:28px 0 10px; }
 .body :deep(blockquote){ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; margin:20px 0; padding:4px 0 4px 18px; border-left:3px solid #c9a86a; font-style:italic; color:#4a4438; }
+
+/* ---- media incorporati nel Rich Text — "grandi come la finestra dell'articolo"
+   (richiesto): piena larghezza della colonna di testo (max 680px, vedi "article" sopra).
+   Vedi app/utils/article.ts → renderEmbeddedAsset per come nasce il markup .rt-media. */
+.body :deep(.rt-media){ margin: 24px 0; }
+.body :deep(.rt-media img),
+.body :deep(.rt-media video){ display:block; width:100%; height:auto; border-radius:4px; }
+.body :deep(.rt-file){ margin: 16px 0; }
+
+/* ---- "protocol font" — stesso meccanismo del modal (mark "Code" nativo di Contentful,
+   nessun Content Type nuovo). Vedi il commento gemello in HouseModal.vue per la nota sul
+   Serif vs Mono. */
+.body :deep(code),
+.body :deep(h5){
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-weight: 400;
+  font-style: normal;
+  background: none;
+  padding: 0;
+  font-size: 14px;
+  letter-spacing: .01em;
+  margin: 0 0 10px;
+  color: #232019;
+}
+/* ---- note a fine articolo — stesso trattamento del modal (.modal-footnotes). */
+.footnotes{
+  margin-top: 32px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(40,30,15,0.16);
+}
+.footnotes-label{
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 11px; letter-spacing:.12em; text-transform:uppercase;
+  color:#b0a98f; margin:0 0 10px;
+}
+.footnotes :deep(p){
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 13px; line-height:1.6; color:#6b6558; margin:0 0 8px;
+}
 .note{ text-align:center; padding:60px 24px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; color:#6b6558; }
 </style>

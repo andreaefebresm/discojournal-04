@@ -2084,7 +2084,7 @@ const serverDiagnostics = /* #__PURE__ */ defineDiagnostics({
 	}
 });
 
-const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"preconnect","href":"https://fonts.googleapis.com"},{"rel":"preconnect","href":"https://fonts.gstatic.com","crossorigin":""},{"rel":"stylesheet","href":"https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap"}],"style":[],"script":[],"noscript":[]};
+const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"preconnect","href":"https://fonts.googleapis.com"},{"rel":"preconnect","href":"https://fonts.gstatic.com","crossorigin":""},{"rel":"stylesheet","href":"https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&family=IBM+Plex+Mono:wght@400;700&display=swap"}],"style":[],"script":[],"noscript":[]};
 
 const appRootTag = "div";
 
@@ -2785,6 +2785,7 @@ async function getIslandContext(event) {
 const _lazy_BnE7qr = () => Promise.resolve().then(function () { return about_get$1; });
 const _lazy_JGoTIW = () => Promise.resolve().then(function () { return houses_get$1; });
 const _lazy_A1lSiv = () => Promise.resolve().then(function () { return _slug__get$1; });
+const _lazy_PFukdv = () => Promise.resolve().then(function () { return _slug_$1; });
 const _lazy_l4NKA8 = () => Promise.resolve().then(function () { return issues_get$1; });
 const _lazy_C_waF1 = () => Promise.resolve().then(function () { return renderer; });
 
@@ -2793,6 +2794,7 @@ const handlers = [
   { route: '/api/about', handler: _lazy_BnE7qr, lazy: true, middleware: false, method: "get" },
   { route: '/api/houses', handler: _lazy_JGoTIW, lazy: true, middleware: false, method: "get" },
   { route: '/api/houses/:slug', handler: _lazy_A1lSiv, lazy: true, middleware: false, method: "get" },
+  { route: '/api/houses/:slug', handler: _lazy_PFukdv, lazy: true, middleware: false, method: undefined },
   { route: '/api/issues', handler: _lazy_l4NKA8, lazy: true, middleware: false, method: "get" },
   { route: '/__nuxt_error', handler: _lazy_C_waF1, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: handler$1, lazy: false, middleware: false, method: undefined },
@@ -3176,6 +3178,10 @@ function mapHouseEntry(entry) {
     } : null,
     body: f.articleBody || null,
     // documento Rich Text di Contentful, o null se non compilato
+    body2: f.articleBody2 || null,
+    body3: f.articleBody3 || null,
+    body4: f.articleBody4 || null,
+    footnotes: f.footnotes || null,
     published: f.published !== false
   };
 }
@@ -3400,6 +3406,33 @@ const _slug__get = defineEventHandler(async (event) => {
 const _slug__get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: _slug__get
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const _slug_ = defineEventHandler(async (event) => {
+  const slug = getRouterParam(event, "slug");
+  const client = getContentfulClient();
+  if (!client) {
+    const found = sample$1.find((h) => h.slug === slug);
+    if (!found) throw createError({ statusCode: 404, statusMessage: "Casa non trovata" });
+    return found;
+  }
+  try {
+    const res = await client.getEntries({ content_type: "article", "fields.slug": slug, limit: 1, include: 10 });
+    const item = res.items[0];
+    if (!item) throw createError({ statusCode: 404, statusMessage: "Casa non trovata" });
+    return mapHouseEntry(item);
+  } catch (err) {
+    if (err.statusCode === 404) throw err;
+    console.error("[api/houses/:slug] fetch Contentful fallito, uso i dati di esempio:", err);
+    const found = sample$1.find((h) => h.slug === slug);
+    if (!found) throw createError({ statusCode: 404, statusMessage: "Casa non trovata" });
+    return found;
+  }
+});
+
+const _slug_$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: _slug_
 }, Symbol.toStringTag, { value: 'Module' }));
 
 const sample = [

@@ -33,5 +33,6 @@ export { requestIdleCallback, cancelIdleCallback } from '#app/compat/idle-callba
 export { setInterval } from '#app/compat/interval';
 export { definePageMeta, PageMeta } from '#app/composables/pages';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
+export { renderField, renderArticleBody, renderFootnotes } from '../app/utils/article';
 export { ctfImg } from '../app/utils/image';
 export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';
