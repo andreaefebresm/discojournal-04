@@ -292,17 +292,10 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
 .modal-body .rt-media video{ display:block; width:100%; height:auto; border-radius:4px; }
 .modal-body .rt-file{ margin: 16px 0; }
 
-/* ---- "protocol font": in Contentful si applica il mark nativo "Code" (icona </> nella
-   toolbar Rich Text — nessun Content Type nuovo, disponibile a qualsiasi Editor) al testo
-   del protocollo/messaggio finale di un articolo (caso d'uso iniziale: l'articolo di
-   Nicole). IBM Plex Serif scelto per coerenza con il fallback "Roboto Serif" indicato —
-   se invece serve l'effetto "da terminale" (monospace) del documento originale, basta
-   cambiare questo font-family in "IBM Plex Mono" (va comunque aggiunta a nuxt.config.ts
-   se non già presente). Bold/unbold: applica anche il mark "Bold" di Contentful sullo
-   stesso testo, eredita font-weight normalmente da <strong>. */
-.modal-body :deep(code),
-.modal-body :deep(h5){
-  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+/* ---- protocollo: tutto il testo marcato con il mark "Code" (o titoli h5) in IBM Plex Mono ---- */
+.modal-body code,
+.modal-body h5{
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
   font-weight: 400;
   font-style: normal;
   background: none;
@@ -312,20 +305,76 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
   margin: 0 0 10px;
   color: var(--ink);
 }
-/* ---- note a fine articolo ("footnotes", richiesto) — font diverso dal corpo, separate da
-   un filo superiore, come un vero blocco di note e non una continuazione del testo. */
+
+/* ---- note a fine articolo ---- */
 .modal-footnotes{
   margin-top: 32px;
   padding-top: 18px;
   border-top: 1px solid rgba(40,30,15,0.16);
 }
 .modal-footnotes-label{
-  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
   font-size: 11px; letter-spacing:.12em; text-transform:uppercase;
   color:#b0a98f; margin:0 0 10px;
 }
-.modal-footnotes :deep(p){
-  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace !important;
+.modal-footnotes p{
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px; line-height:1.6; color:#6b6558; margin:0 0 8px;
+}
+
+/* ---- Strata: titolo/sottotitolo/autrice (EB Garamond, centrati) ---- */
+.modal-body .rt-title,
+.modal-body .rt-sub{
+  font-family: "EB Garamond", Garamond, Georgia, serif;
+  text-align: center;
+  color: var(--ink);
+}
+.modal-body .rt-title{
+  font-size: 40px; font-weight: 700; line-height: 1.1;
+  margin: 8px 0 10px; letter-spacing: .02em;
+}
+.modal-body .rt-sub{
+  font-size: 19px; line-height: 1.4; margin: 0 0 6px;
+}
+
+/* ---- "***" = divisione tra gli atti ---- */
+.modal-body .rt-break{
+  text-align: center; margin: 32px 0; letter-spacing: .3em;
+}
+
+/* ---- testi pubblicitari / governativi: grassetto maiuscolo, font neutro ---- */
+.modal-body .rt-ad{
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700; font-style: normal;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+
+/* ---- protocollo + messaggio di fine trasmissione: IBM Plex Mono, a sinistra ---- */
+.modal-body .rt-proto{
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px; line-height: 1.6; letter-spacing: .01em;
+  text-align: left; margin: 0 0 10px;
+}
+.modal-body .rt-proto strong{
+  font-family: inherit; font-weight: 700;
+}
+/* ---- testi pubblicitari / governativi (Heading 3 in Contentful): Helvetica, grassetto, maiuscolo ---- */
+.modal-body h3{
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 28px 0 14px;
+}
+.modal-body h2.rt-title{
+  font-family: "EB Garamond", Garamond, Georgia, serif !important;
+  text-align: center;
+  font-size: 40px; font-weight: 700; line-height: 1.1;
+  letter-spacing: .02em;
+  margin: 8px 0 10px;
 }
 </style>

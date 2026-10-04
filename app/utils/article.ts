@@ -1,13 +1,10 @@
-import { BLOCKS, INLINES } from "@contentful/rich-text-types";
+import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 
 // Helper condiviso tra HouseModal.vue (finestra modale) e app/pages/articolo/[slug].vue
-// (pagina diretta) — prima la stessa logica era duplicata in entrambi i file (mdInline/
-// renderBody), qui vive in un solo posto.
+// (pagina diretta).
 
-// --- mini-markdown, usato SOLO per l'array di paragrafi semplici (dati locali di esempio
-// in server/data/houses.sample.json). Il Rich Text vero di Contentful ha già i suoi stili
-// nativi, non serve applicargli anche questo.
+// --- mini-markdown, usato SOLO per l'array di paragrafi semplici (dati locali di esempio)
 function mdInline(s: string) {
   return s
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -24,14 +21,7 @@ function renderParagraphs(paragraphs: string[]) {
     .join("");
 }
 
-// Renderizza un embedded asset (immagine o altro file) dentro il Rich Text. Per default
-// @contentful/rich-text-html-renderer NON produce alcun HTML per gli embedded asset — va
-// detto esplicitamente come trasformarli ("immagini/media che devono avere width grandi
-// come la finestra dell'articolo", richiesto). Il ".rt-media" risultante è width:100% via
-// CSS in HouseModal.vue/[slug].vue — qui ci occupiamo solo di generare il markup giusto,
-// non della dimensione (quella è responsabilità del CSS del contenitore che lo ospita).
-// NB: perché node.data.target abbia i "fields" (e non solo un sys.id) serve che la fetch a
-// Contentful sia stata fatta con "include" >= 1 — vedi server/api/houses/[slug].ts.
+// Embedded asset (immagini/video/file) dentro il Rich Text.
 function renderEmbeddedAsset(node: any): string {
   const f = node?.data?.target?.fields;
   if (!f?.file) return "";
@@ -46,45 +36,90 @@ function renderEmbeddedAsset(node: any): string {
   if (contentType.startsWith("video/")) {
     return `<figure class="rt-media"><video src="${url}" controls playsinline></video></figure>`;
   }
-  // altro tipo di file (pdf, audio, ecc.) — link semplice invece di provare a incorporarlo
   return `<p class="rt-file"><a href="${url}" target="_blank" rel="noopener">${alt || "Scarica il file"}</a></p>`;
 }
 
-const richTextOptions = {
-  renderNode: {
-    [BLOCKS.EMBEDDED_ASSET]: renderEmbeddedAsset,
-    // entry incorporate (non asset) — non usate al momento, non renderizzare nulla invece
-    // di far esplodere il renderer su un nodo che non sa gestire.
-    [BLOCKS.EMBEDDED_ENTRY]: () => "",
-    [INLINES.EMBEDDED_ENTRY]: () => ""
-  }
-  // NB: nessuna renderMark custom qui — il mark "Code" nativo di Contentful (icona </> in
-  // toolbar, disponibile a qualsiasi ruolo Editor, nessun Content Type da creare) è già
-  // renderizzato di default come <code>...</code>. È quello che usiamo per marcare il
-  // "protocollo"/font diverso di Nicole — vedi CSS ":deep(code)" in HouseModal.vue/[slug].vue.
-} as const;
+// testo semplice di un nodo (ricorsivo) — serve per riconoscere "***" e "<SIGNAL LOST…"
+function plainText(node: any): string {
+  if (!node) return "";
+  if (typeof node.value === "string") return node.value;
+  return (node.content || []).map(plainText).join("");
+}
 
-// Un campo Rich Text può essere: un documento Contentful (nodeType "document"), un array
-// di paragrafi semplici (dati locali di esempio), oppure assente.
-export function renderField(body: unknown): string {
+// "grassetto + tutto maiuscolo" = testo pubblicitario/governativo (font neutro tipo Helvetica).
+// Almeno 4 lettere, così "I", "AI" o sigle corte in grassetto non vengono toccate.
+function isAdText(s: string): boolean {
+  const letters = s.replace(/&[a-z#0-9]+;/gi, "").replace(/[^A-Za-zÀ-ÿ]/g, "");
+  return letters.length >= 4 && letters === letters.toUpperCase();
+}
+
+// "state" ricorda, tra un campo Rich Text e il successivo, se siamo già nel messaggio di
+// fine trasmissione (da "<SIGNAL LOST" in poi tutti i paragrafi usano il font protocollo).
+type RenderState = { end: boolean; proto: boolean };
+
+function makeOptions(state: RenderState) {
+  return {
+    renderNode: {
+      [BLOCKS.EMBEDDED_ASSET]: renderEmbeddedAsset,
+      [BLOCKS.EMBEDDED_ENTRY]: () => "",
+      [INLINES.EMBEDDED_ENTRY]: () => "",
+
+      // Heading 1 = titolo; Heading 2 e Heading 4 = sottotitolo / autrice
+      [BLOCKS.HEADING_1]: (node: any, next: any) => `<h2 class="rt-title">${next(node.content)}</h2>`,
+      [BLOCKS.HEADING_2]: (node: any, next: any) => `<p class="rt-sub">${next(node.content)}</p>`,
+      [BLOCKS.HEADING_4]: (node: any, next: any) => `<p class="rt-sub">${next(node.content)}</p>`,
+
+      // una linea orizzontale chiude comunque il blocco protocollo (rete di sicurezza)
+      [BLOCKS.HR]: () => { state.proto = false; return "<hr/>"; },
+
+      [BLOCKS.PARAGRAPH]: (node: any, next: any) => {
+        const t = plainText(node).trim();
+        if (/^(\*\s*){3,}$/.test(t)) {
+          state.proto = false;
+          return `<p class="rt-break">***</p>`;
+        }
+        // il blocco protocollo comincia da "SURVIVAL PROTOCOL…" e finisce con
+        // "THE WATER MUST REMAIN FREE" (o alla prima linea orizzontale / ***)
+        if (/^SURVIVAL PROTOCOL/i.test(t)) state.proto = true;
+        // il messaggio finale comincia da "<SIGNAL LOST" e dura fino alla fine
+        if (t.startsWith("<SIGNAL LOST")) state.end = true;
+
+        const mono = state.proto || state.end;
+        const html = `<p${mono ? ' class="rt-proto"' : ""}>${next(node.content)}</p>`;
+        if (state.proto && /THE WATER MUST REMAIN FREE/i.test(t)) state.proto = false;
+        return html;
+      }
+    },
+    renderMark: {
+      // dentro il protocollo o nel messaggio finale il grassetto resta grassetto normale
+      // (non "pubblicità"): il font lo decide il paragrafo
+      [MARKS.BOLD]: (text: string) =>
+        !state.proto && !state.end && isAdText(text)
+          ? `<strong class="rt-ad">${text}</strong>`
+          : `<strong>${text}</strong>`
+    }
+  };
+}
+
+export function renderField(body: unknown, state: RenderState = { end: false, proto: false }): string {
   if (!body) return "";
   if (Array.isArray(body)) return renderParagraphs(body as string[]);
   if (typeof body === "object" && (body as any).nodeType === "document") {
-    return documentToHtmlString(body as any, richTextOptions as any);
+    return documentToHtmlString(body as any, makeOptions(state) as any);
   }
   return String(body);
 }
 
-// Concatena articleBody + articleBody2 + articleBody3 + articleBody4 in un unico HTML — un
-// solo articolo diviso su più campi Rich Text perché troppo lungo per un campo solo
-// ("l'articolo è lungo 500000 caratteri", richiesto). I campi vuoti vengono saltati, quindi
-// funziona identico a prima per gli articoli che usano solo articleBody.
+// articleBody + 2/3/4 in un unico HTML; lo stato (protocollo / fine trasmissione) passa da un
+// campo all'altro, perché il blocco potrebbe iniziare in un campo e finire in un altro.
 export function renderArticleBody(house: any): string {
-  return [house?.body, house?.body2, house?.body3, house?.body4].map(renderField).filter(Boolean).join("");
+  const state: RenderState = { end: false, proto: false };
+  return [house?.body, house?.body2, house?.body3, house?.body4]
+    .map((b) => renderField(b, state))
+    .filter(Boolean)
+    .join("");
 }
 
-// Campo "footnotes" separato, renderizzato a parte così si può stilizzarlo diversamente
-// (font diverso, richiesto) senza mescolarlo al corpo principale.
 export function renderFootnotes(house: any): string {
   return renderField(house?.footnotes);
 }

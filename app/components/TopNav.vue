@@ -30,12 +30,6 @@
 </script>
 
 <style scoped>
-/* overlay vero sopra la board (position:absolute, sfondo trasparente): la board occupa
-   tutta l'altezza sotto e la barra galleggia sopra, così il mosaico del mare si vede
-   anche dietro logo/voci invece di uno sfondo pieno che spinge la board in basso.
-   align-items:flex-start (non più center) perché le icone, più alte di una barra di
-   64px, devono "scendere" dall'angolo in alto invece di uscire dal viewport verso l'alto
-   se centrate in una riga troppo bassa per contenerle. */
 .topbar{
   min-height: 64px;
   position: absolute;
@@ -43,41 +37,48 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 20px 24px;
+  /* padding che scala con lo schermo (24px sul desktop, ~14px a 360px) + safe-area per
+     notch / landscape su iPhone */
+  padding: clamp(12px, 4vw, 20px) 0;
+  padding-left: max(clamp(12px, 4vw, 24px), env(safe-area-inset-left));
+  padding-right: max(clamp(12px, 4vw, 24px), env(safe-area-inset-right));
+  box-sizing: border-box;
+  max-width: 100vw;
   background: transparent;
   z-index: 20;
 }
-.logo-link{ all: unset; cursor: pointer; display: block; border-radius: 50%; }
+.logo-link{ all: unset; cursor: pointer; display: block; border-radius: 50%; flex-shrink: 0; }
 .logo{
-  height:5rem; width:5rem; border-radius:50%; display:block;
+  height: clamp(52px, 15vw, 80px); width: clamp(52px, 15vw, 80px);
+  border-radius:50%; display:block;
   filter: drop-shadow(0 2px 6px rgba(10,25,35,0.35));
   transition: transform 0.2s cubic-bezier(.2,.8,.2,1);
 }
 .logo-link:hover .logo, .logo-link:focus-visible .logo{ transform: scale(1.08); }
 
-.navlinks{ display:flex; align-items:flex-start; gap:36px; }
+/* gap ridotto su schermi stretti (36px solo da ~480px in su) */
+.navlinks{ display:flex; align-items:flex-start; gap: clamp(8px, 3vw, 36px); min-width: 0; }
 .navlinks button.navitem, .navlinks a.navitem{
   all: unset;
   display:flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   cursor:pointer;
   transition: transform 0.2s cubic-bezier(.2,.8,.2,1);
 }
 .navlinks .navitem:hover, .navlinks .navitem:focus-visible{ transform: translateY(-3px) scale(1.05); }
 .navlinks .navitem img{
-  height:80px; width:auto; display:block;
+  height: clamp(52px, 16vw, 80px); width:auto; max-width: 100%; display:block;
   filter: drop-shadow(0 6px 12px rgba(10,25,35,0.4));
 }
 .navlinks .navitem span{
   font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-size:13px;
+  font-size: clamp(11px, 3.2vw, 13px);
   font-weight:600;
   letter-spacing:.04em;
   color:#efe9d8;
-  /* niente stroke/paint-order (proprietà SVG): qui è testo HTML normale — un text-shadow
-     smussato fa da "alone" scuro per restare leggibile sopra il mosaico del mare */
   text-shadow: 0 1px 3px rgba(10,20,15,0.85), 0 0 6px rgba(10,20,15,0.5);
 }
 </style>

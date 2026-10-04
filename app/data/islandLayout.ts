@@ -39,14 +39,13 @@ export interface IslandLayout {
 // posizioni di MINI_ISLANDS/SEA_OBJECTS in IsoBoard.vue sono state ricalcolate insieme a
 // questo giro, per non finire sotto alla nuova isola 6 o alle isole 1-5 spostate.
 export const ISLAND_LAYOUT: Record<number, IslandLayout> = {
-  1: { gx0: 42,   gy0: 219,  cols: 209, rows: 176 },
-  2: { gx0: -466, gy0: 142,  cols: 214, rows: 157 },
+  1: { gx0: 42, gy0: 219, cols: 209, rows: 176 },
+  2: { gx0: -466, gy0: 142, cols: 214, rows: 157 },
   3: { gx0: -490, gy0: -299, cols: 190, rows: 152 },
-  4: { gx0: -49,  gy0: -455, cols: 196, rows: 152 },
-  5: { gx0: 367,  gy0: -106, cols: 209, rows: 176 },
-  6: { gx0: -125, gy0: -108, cols: 220, rows: 190 } // isola della redazione ("editors issue"), al centro
-};
-
+  4: { gx0: -49, gy0: -455, cols: 196, rows: 152 },
+  5: { gx0: 367, gy0: -106, cols: 209, rows: 176 },
+  6: { gx0: -85, gy0: -148, cols: 220, rows: 190 } // isola della redazione ("editors issue"), al centro};
+}
 // estensione "di contenuto" della board (in celle) — bounding box che contiene tutte le
 // isole con margine, usata per il calcolo del viewBox in IsoBoard.vue. Allargato per la
 // nuova disposizione a 6 isole (round 4, vedi sopra).

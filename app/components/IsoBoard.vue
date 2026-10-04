@@ -4,15 +4,10 @@
       <svg ref="svgEl" id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
     <div class="list">
-      <button
-        v-for="hs in mobileHouses"
-        :key="hs.slug"
-        type="button"
-        class="house"
-        :aria-label="`Isola 0${hs.number} — ${hs.title} — apri articolo`"
-        @click="$emit('select', hs)"
-      >
-        <img :src="ctfImg(hs.image?.url, { w: 700 })" :alt="`${hs.title}, isola 0${hs.number}`" loading="lazy" decoding="async" />
+      <button v-for="hs in mobileHouses" :key="hs.slug" type="button" class="house"
+        :aria-label="`Isola 0${hs.number} — ${hs.title} — apri articolo`" @click="$emit('select', hs)">
+        <img :src="ctfImg(hs.image?.url, { w: 700 })" :alt="`${hs.title}, isola 0${hs.number}`" loading="lazy"
+          decoding="async" />
         <div class="caption">{{ hs.title }}</div>
       </button>
     </div>
@@ -566,7 +561,18 @@ function buildBoard() {
     minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
   });
   const pad = 30;
-  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  let cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  {
+    let iMinX = Infinity, iMaxX = -Infinity, iMinY = Infinity, iMaxY = -Infinity;
+    (props.houses as any[]).forEach(h => {
+      if (typeof h.gx0 !== 'number') return;
+      plotCorners(h).forEach((p: { x: number; y: number }) => {
+        iMinX = Math.min(iMinX, p.x); iMaxX = Math.max(iMaxX, p.x);
+        iMinY = Math.min(iMinY, p.y); iMaxY = Math.max(iMaxY, p.y);
+      });
+    });
+    if (isFinite(iMinX)) { cx = (iMinX + iMaxX) / 2; cy = (iMinY + iMaxY) / 2; }
+  } 2;
   const CROP_FACTOR = 0.752;
   const contentW = ((maxX - minX) + pad * 2) * CROP_FACTOR;
   const contentH = ((maxY - minY) + pad * 2) * CROP_FACTOR;
@@ -792,86 +798,225 @@ watch(() => props.houses, buildBoard, { deep: true });
 </script>
 
 <style>
-.board-root{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-.board-wrap{ flex:1 1 auto; min-height:0; display:flex; }
-#board-svg{ display:block; width:100%; height:100%; }
+.board-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
-.mini-island{ filter:grayscale(1) brightness(0.94) contrast(1.05); opacity:0.82; pointer-events:none; }
+.board-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
 
-.sea-object{ pointer-events:none; }
-.animal{ pointer-events:none; }
-.sea-object-float, .animal-float{
+#board-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mini-island {
+  filter: grayscale(1) brightness(0.94) contrast(1.05);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.sea-object {
+  pointer-events: none;
+}
+
+.animal {
+  pointer-events: none;
+}
+
+.sea-object-float,
+.animal-float {
   animation-name: floatBob;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
-@keyframes floatBob{
-  0%   { transform: translate(0, 0)      rotate(0deg); }
-  25%  { transform: translate(0.02, -0.09) rotate(1.1deg); }
-  50%  { transform: translate(0, -0.14)   rotate(0deg); }
-  75%  { transform: translate(-0.02, -0.09) rotate(-1.1deg); }
-  100% { transform: translate(0, 0)      rotate(0deg); }
-}
-@media (prefers-reduced-motion: reduce){
-  .sea-object-float, .animal-float{ animation:none; }
+
+@keyframes floatBob {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(0.02, -0.09) rotate(1.1deg);
+  }
+
+  50% {
+    transform: translate(0, -0.14) rotate(0deg);
+  }
+
+  75% {
+    transform: translate(-0.02, -0.09) rotate(-1.1deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
 }
 
-.house-btn{ all:unset; display:block; width:100%; height:100%; cursor:pointer; }
-.house-frame{ width:100%; height:100%; display:flex; align-items:flex-end; justify-content:center; transform-origin:50% 100%; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
-.house-btn:hover .house-frame, .house-btn:focus-visible .house-frame{ transform: translateY(-4%) scale(1.05); }
-.house-frame .card{
-  width:100%; display:block;
+@media (prefers-reduced-motion: reduce) {
+
+  .sea-object-float,
+  .animal-float {
+    animation: none;
+  }
+}
+
+.house-btn {
+  all: unset;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.house-frame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transform-origin: 50% 100%;
+  transition: transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+
+.house-btn:hover .house-frame,
+.house-btn:focus-visible .house-frame {
+  transform: translateY(-4%) scale(1.05);
+}
+
+.house-frame .card {
+  width: 100%;
+  display: block;
   animation: islandFloat 7s ease-in-out infinite;
 }
-@keyframes islandFloat{
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4%); }
+
+@keyframes islandFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4%);
+  }
 }
 
-.house-frame img{
-  width:100%; display:block;
-  filter: drop-shadow(0 14px 18px rgba(5,20,25,0.45));
+.house-frame img {
+  width: 100%;
+  display: block;
+  filter: drop-shadow(0 14px 18px rgba(5, 20, 25, 0.45));
   transition: filter .35s ease;
 }
-.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame{
+
+.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame {
   transform: scale(0.8);
 }
-.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame img{
-  filter: grayscale(1) drop-shadow(0 14px 18px rgba(5,20,25,0.45));
-}
-.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-cap{
-  opacity:.5;
+
+.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-frame img {
+  filter: grayscale(1) drop-shadow(0 14px 18px rgba(5, 20, 25, 0.45));
 }
 
-.house-badge{ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; fill:#efe9d8; }
-.house-cap{
+.board-root:has(.main-island.house-hover) .main-island:not(.house-hover) .house-cap {
+  opacity: .5;
+}
+
+.house-badge {
   font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-weight:600;
-  fill:var(--ink, #232019);
-  paint-order:stroke;
-  stroke:#f4f2ec;
-  stroke-linejoin:round;
-  pointer-events:none;
+  fill: #efe9d8;
+}
+
+.house-cap {
+  font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  fill: var(--ink, #232019);
+  paint-order: stroke;
+  stroke: #f4f2ec;
+  stroke-linejoin: round;
+  pointer-events: none;
   transition: opacity .35s ease;
 }
-.house-hover .house-frame{ transform: translateY(-4%) scale(1.05); }
 
-.list{ display:none; }
+.house-hover .house-frame {
+  transform: translateY(-4%) scale(1.05);
+}
+
+.list {
+  display: none;
+}
+
 .board-root.hide-main-islands .main-island,
-.board-root.hide-main-islands .main-island-steps{ display:none; }
-@media (max-width: 760px){
-  .board-wrap{
-    display:flex;
-    position:fixed; inset:0;
-    z-index:0;
-    pointer-events:none;
+.board-root.hide-main-islands .main-island-steps {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .board-wrap {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
   }
-  .main-island{ display:none; }
-  .main-island-steps{ display:none; }
-  .board-root{ min-height: 100%; }
-  .list{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:28px; padding:150px 20px 32px; flex:1 1 auto; min-height:0; overflow:auto; }
-  .list .house{ width:92%; max-width:420px; text-decoration:none; color:inherit; display:block; background:none; border:none; padding:0; cursor:pointer; font:inherit; }
-  .list .house img{ width:100%; border-radius:6px; filter: drop-shadow(0 8px 10px rgba(15,13,10,.3)); }
-  .list .caption{ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; text-shadow: 0 1px 3px rgba(255,255,255,.9), 0 1px 3px rgba(255,255,255,.9); }
+
+  .main-island {
+    display: none;
+  }
+
+  .main-island-steps {
+    display: none;
+  }
+
+  .board-root {
+    min-height: 100%;
+  }
+
+  .list {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 150px 20px 32px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .list .house {
+    width: 92%;
+    max-width: 420px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .list .house img {
+    width: 100%;
+    border-radius: 6px;
+    filter: drop-shadow(0 8px 10px rgba(15, 13, 10, .3));
+  }
+
+  .list .caption {
+    font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 12px;
+    color: #6b6558;
+    text-align: center;
+    padding-top: 6px;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, .9), 0 1px 3px rgba(255, 255, 255, .9);
+  }
 }
 </style>

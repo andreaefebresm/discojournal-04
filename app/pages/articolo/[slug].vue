@@ -87,4 +87,41 @@ h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
   font-size: 13px; line-height:1.6; color:#6b6558; margin:0 0 8px;
 }
 .note{ text-align:center; padding:60px 24px; font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; color:#6b6558; }
+
+.body :deep(.rt-title),
+.body :deep(.rt-sub){
+  font-family: "EB Garamond", Garamond, Georgia, serif;
+  text-align: center; color:#232019;
+}
+.body :deep(.rt-title){ font-size: 40px; font-weight: 700; line-height: 1.1; margin: 8px 0 10px; letter-spacing: .02em; }
+.body :deep(.rt-sub){ font-size: 19px; line-height: 1.4; margin: 0 0 6px; }
+
+.body :deep(.rt-break){ text-align: center; margin: 32px 0; letter-spacing: .3em; }
+
+.body :deep(.rt-ad){
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700; font-style: normal;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.body :deep(code strong.rt-ad){ font-family: inherit; text-transform: none; letter-spacing: inherit; }
+.body :deep(strong.rt-ad code){ text-transform: none; letter-spacing: .01em; }
+
+.body :deep(.rt-end){
+  font-family: "IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+  font-size: 14px; letter-spacing: .01em; text-align: left; margin: 0 0 10px;
+}
+
+.body :deep(h3){
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700; font-style: normal;
+  text-transform: uppercase; letter-spacing: .04em;
+  font-size: 16px; line-height: 1.4;
+  margin: 28px 0 14px;
+}
+.body :deep(h2.rt-title){
+  font-family: "EB Garamond", Garamond, Georgia, serif !important;
+  text-align: center;
+  font-size: 40px; font-weight: 700; line-height: 1.1;
+  letter-spacing: .02em; margin: 8px 0 10px;
+}
 </style>

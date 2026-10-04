@@ -1,50 +1,50 @@
 import process from 'node:process';globalThis._importMeta_={url:import.meta.url,env:process.env};import { tmpdir } from 'node:os';
-import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, createError, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, getQuery as getQuery$1, getRequestWebStream, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, readBody, getResponseStatusText } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/h3/dist/index.mjs';
+import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, createError, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, appendResponseHeader, getRequestURL, getResponseHeader, removeResponseHeader, getQuery as getQuery$1, getRequestWebStream, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, getRouterParam, readBody, getResponseStatusText } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/h3/dist/index.mjs';
 import { Server } from 'node:http';
 import { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
 import { parentPort, threadId } from 'node:worker_threads';
-import { escapeHtml } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/@vue/shared/dist/shared.cjs.js';
-import viteNodeEntry_mjs from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/@nuxt/vite-builder/dist/vite-node-entry.mjs';
-import { viteNodeFetch } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/@nuxt/vite-builder/dist/vite-node.mjs';
-import { createClient } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/contentful/dist/esm/index.js';
-import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, encodePath, joinRelativeURL } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/ufo/dist/index.mjs';
-import destr, { destr as destr$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/destr/dist/index.mjs';
-import { createHooks } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/nitropack/node_modules/hookable/dist/index.mjs';
-import { createFetch, Headers as Headers$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/ofetch/dist/node.mjs';
-import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/node-mock-http/dist/index.mjs';
-import { createStorage, prefixStorage } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unstorage/dist/index.mjs';
-import unstorage_47drivers_47fs from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unstorage/drivers/fs.mjs';
-import { digest, hash as hash$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/ohash/dist/index.mjs';
-import { klona } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/klona/dist/index.mjs';
-import defu, { defuFn } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/defu/dist/defu.mjs';
-import { snakeCase } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/scule/dist/index.mjs';
-import { getContext } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/nitropack/node_modules/unctx/dist/index.mjs';
-import { toRouteMatcher, createRouter } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/radix3/dist/index.mjs';
+import { escapeHtml } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/@vue/shared/dist/shared.cjs.js';
+import viteNodeEntry_mjs from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/@nuxt/vite-builder/dist/vite-node-entry.mjs';
+import { viteNodeFetch } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/@nuxt/vite-builder/dist/vite-node.mjs';
+import { createClient } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/contentful/dist/esm/index.js';
+import { parseURL, withoutBase, joinURL, getQuery, withQuery, withTrailingSlash, decodePath, withLeadingSlash, withoutTrailingSlash, encodePath, joinRelativeURL } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/ufo/dist/index.mjs';
+import destr, { destr as destr$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/destr/dist/index.mjs';
+import { createHooks } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/nitropack/node_modules/hookable/dist/index.mjs';
+import { createFetch, Headers as Headers$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/ofetch/dist/node.mjs';
+import { fetchNodeRequestHandler, callNodeRequestHandler } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/node-mock-http/dist/index.mjs';
+import { createStorage, prefixStorage } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unstorage/dist/index.mjs';
+import unstorage_47drivers_47fs from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unstorage/drivers/fs.mjs';
+import { digest, hash as hash$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/ohash/dist/index.mjs';
+import { klona } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/klona/dist/index.mjs';
+import defu, { defuFn } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/defu/dist/defu.mjs';
+import { snakeCase } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/scule/dist/index.mjs';
+import { getContext } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/nitropack/node_modules/unctx/dist/index.mjs';
+import { toRouteMatcher, createRouter } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/radix3/dist/index.mjs';
 import { readFile } from 'node:fs/promises';
-import consola, { consola as consola$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/consola/dist/index.mjs';
-import { ErrorParser } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/youch-core/build/index.js';
-import { Youch } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/youch/build/index.js';
-import { SourceMapConsumer } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/source-map/source-map.js';
-import { defineDiagnostics, createConsoleReporter } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/nostics/dist/index.mjs';
-import { ansiFormatter } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/nostics/dist/formatters/ansi.mjs';
+import consola, { consola as consola$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/consola/dist/index.mjs';
+import { ErrorParser } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/youch-core/build/index.js';
+import { Youch } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/youch/build/index.js';
+import { SourceMapConsumer } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/source-map/source-map.js';
+import { defineDiagnostics, createConsoleReporter } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/nostics/dist/index.mjs';
+import { ansiFormatter } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/nostics/dist/formatters/ansi.mjs';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { stringify, uneval } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/devalue/index.js';
-import { getContext as getContext$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unctx/dist/index.mjs';
-import { captureRawStackTrace, parseRawStackTrace } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/errx/dist/index.mjs';
-import { isVNode, isRef, toValue } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/vue/index.mjs';
-import _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/@nuxt/vite-builder/dist/fix-stacktrace.mjs';
+import { stringify, uneval } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/devalue/index.js';
+import { getContext as getContext$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unctx/dist/index.mjs';
+import { captureRawStackTrace, parseRawStackTrace } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/errx/dist/index.mjs';
+import { isVNode, isRef, toValue } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/vue/index.mjs';
+import _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/@nuxt/vite-builder/dist/fix-stacktrace.mjs';
 import { promises } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname as dirname$1, resolve as resolve$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/pathe/dist/index.mjs';
-import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/vue-bundle-renderer/dist/runtime.mjs';
-import { renderToString } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/vue/server-renderer/index.mjs';
-import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unhead/dist/server.mjs';
-import { walkResolver } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unhead/dist/utils.mjs';
-import { DeprecationsPlugin } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unhead/dist/legacy.mjs';
-import { PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file:///Users/andreaelenafebresmedina/Desktop/discojournal-04/node_modules/unhead/dist/plugins.mjs';
+import { dirname as dirname$1, resolve as resolve$1 } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/pathe/dist/index.mjs';
+import { createRenderer, getRequestDependencies, getPreloadLinks, getPrefetchLinks } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/vue-bundle-renderer/dist/runtime.mjs';
+import { renderToString } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/vue/server-renderer/index.mjs';
+import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unhead/dist/server.mjs';
+import { walkResolver } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unhead/dist/utils.mjs';
+import { DeprecationsPlugin } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unhead/dist/legacy.mjs';
+import { PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file:///Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/node_modules/unhead/dist/plugins.mjs';
 
-const serverAssets = [{"baseName":"server","dir":"/Users/andreaelenafebresmedina/Desktop/discojournal-04/server/assets"}];
+const serverAssets = [{"baseName":"server","dir":"/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/server/assets"}];
 
 const assets$1 = createStorage();
 
@@ -56,11 +56,11 @@ const storage = createStorage({});
 
 storage.mount('/assets', assets$1);
 
-storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"/Users/andreaelenafebresmedina/Desktop/discojournal-04","watchOptions":{"ignored":[null]}}));
-storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"/Users/andreaelenafebresmedina/Desktop/discojournal-04/server","watchOptions":{"ignored":[null]}}));
-storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"/Users/andreaelenafebresmedina/Desktop/discojournal-04/.nuxt"}));
-storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"/Users/andreaelenafebresmedina/Desktop/discojournal-04/.nuxt/cache"}));
-storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"/Users/andreaelenafebresmedina/Desktop/discojournal-04/.data/kv"}));
+storage.mount('root', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04","watchOptions":{"ignored":[null]}}));
+storage.mount('src', unstorage_47drivers_47fs({"driver":"fs","readOnly":true,"base":"/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/server","watchOptions":{"ignored":[null]}}));
+storage.mount('build', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/.nuxt"}));
+storage.mount('cache', unstorage_47drivers_47fs({"driver":"fs","readOnly":false,"base":"/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/.nuxt/cache"}));
+storage.mount('data', unstorage_47drivers_47fs({"driver":"fs","base":"/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04/.data/kv"}));
 
 function useStorage(base = "") {
   return base ? prefixStorage(storage, base) : storage;
@@ -2031,7 +2031,7 @@ if (!window.__NUXT_DEVTOOLS_TIME_METRIC__) {
 window.__NUXT_DEVTOOLS_TIME_METRIC__.appInit = Date.now()
 `;
 
-const _H7XdoHkiaXzAHS3zGqDjkMh8LS0sou1eIU8tF615Tc = (function(nitro) {
+const _YGgLxYD48H6dPBj_dmcXpHWTfwVX3RxTZnZl1xl49Jg = (function(nitro) {
   nitro.hooks.hook("render:html", (htmlContext) => {
     htmlContext.head.push(`<script>${script}<\/script>`);
   });
@@ -2084,7 +2084,7 @@ const serverDiagnostics = /* #__PURE__ */ defineDiagnostics({
 	}
 });
 
-const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"preconnect","href":"https://fonts.googleapis.com"},{"rel":"preconnect","href":"https://fonts.gstatic.com","crossorigin":""},{"rel":"stylesheet","href":"https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&family=IBM+Plex+Mono:wght@400;700&display=swap"}],"style":[],"script":[],"noscript":[]};
+const appHead = {"meta":[{"name":"viewport","content":"width=device-width, initial-scale=1"},{"charset":"utf-8"}],"link":[{"rel":"preconnect","href":"https://fonts.googleapis.com"},{"rel":"preconnect","href":"https://fonts.gstatic.com","crossorigin":""},{"rel":"stylesheet","href":"https://fonts.googleapis.com/css2?family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap"},{"rel":"stylesheet","href":"https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap"}],"style":[],"script":[],"noscript":[]};
 
 const appRootTag = "div";
 
@@ -2100,7 +2100,7 @@ const appSpaLoaderAttrs = {"id":"__nuxt-loader"};
 
 const appId = "nuxt-app";
 
-const rootDir = "/Users/andreaelenafebresmedina/Desktop/discojournal-04";
+const rootDir = "/Users/andreaelenafebresmedina/Desktop/sites/discojournal-04";
 
 //#region src/runtime/plugins/dev-server-logs.ts
 const devReducers = {
@@ -2177,7 +2177,7 @@ function onConsoleLog(callback) {
 }
 
 const plugins = [
-  _H7XdoHkiaXzAHS3zGqDjkMh8LS0sou1eIU8tF615Tc,
+  _YGgLxYD48H6dPBj_dmcXpHWTfwVX3RxTZnZl1xl49Jg,
 dev_server_logs_default,
 _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw
 ];
@@ -2207,7 +2207,7 @@ function getAsset (id) {
 
 const METHODS = /* @__PURE__ */ new Set(["HEAD", "GET"]);
 const EncodingMap = { gzip: ".gz", br: ".br" };
-const _uo3aHL = eventHandler((event) => {
+const _Uh1yS_ = eventHandler((event) => {
   if (event.method && !METHODS.has(event.method)) {
     return;
   }
@@ -2782,23 +2782,23 @@ async function getIslandContext(event) {
 	};
 }
 
-const _lazy_BnE7qr = () => Promise.resolve().then(function () { return about_get$1; });
-const _lazy_JGoTIW = () => Promise.resolve().then(function () { return houses_get$1; });
-const _lazy_A1lSiv = () => Promise.resolve().then(function () { return _slug__get$1; });
-const _lazy_PFukdv = () => Promise.resolve().then(function () { return _slug_$1; });
-const _lazy_l4NKA8 = () => Promise.resolve().then(function () { return issues_get$1; });
-const _lazy_C_waF1 = () => Promise.resolve().then(function () { return renderer; });
+const _lazy_okXmpC = () => Promise.resolve().then(function () { return about_get$1; });
+const _lazy_mSu9FD = () => Promise.resolve().then(function () { return houses_get$1; });
+const _lazy_E7Rim6 = () => Promise.resolve().then(function () { return _slug__get$1; });
+const _lazy_kYPFed = () => Promise.resolve().then(function () { return _slug_$1; });
+const _lazy_zQ5oXu = () => Promise.resolve().then(function () { return issues_get$1; });
+const _lazy_iY1g1Y = () => Promise.resolve().then(function () { return renderer; });
 
 const handlers = [
-  { route: '', handler: _uo3aHL, lazy: false, middleware: true, method: undefined },
-  { route: '/api/about', handler: _lazy_BnE7qr, lazy: true, middleware: false, method: "get" },
-  { route: '/api/houses', handler: _lazy_JGoTIW, lazy: true, middleware: false, method: "get" },
-  { route: '/api/houses/:slug', handler: _lazy_A1lSiv, lazy: true, middleware: false, method: "get" },
-  { route: '/api/houses/:slug', handler: _lazy_PFukdv, lazy: true, middleware: false, method: undefined },
-  { route: '/api/issues', handler: _lazy_l4NKA8, lazy: true, middleware: false, method: "get" },
-  { route: '/__nuxt_error', handler: _lazy_C_waF1, lazy: true, middleware: false, method: undefined },
+  { route: '', handler: _Uh1yS_, lazy: false, middleware: true, method: undefined },
+  { route: '/api/about', handler: _lazy_okXmpC, lazy: true, middleware: false, method: "get" },
+  { route: '/api/houses', handler: _lazy_mSu9FD, lazy: true, middleware: false, method: "get" },
+  { route: '/api/houses/:slug', handler: _lazy_E7Rim6, lazy: true, middleware: false, method: "get" },
+  { route: '/api/houses/:slug', handler: _lazy_kYPFed, lazy: true, middleware: false, method: undefined },
+  { route: '/api/issues', handler: _lazy_zQ5oXu, lazy: true, middleware: false, method: "get" },
+  { route: '/__nuxt_error', handler: _lazy_iY1g1Y, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: handler$1, lazy: false, middleware: false, method: undefined },
-  { route: '/**', handler: _lazy_C_waF1, lazy: true, middleware: false, method: undefined }
+  { route: '/**', handler: _lazy_iY1g1Y, lazy: true, middleware: false, method: undefined }
 ];
 
 function createNitroApp() {
@@ -3248,8 +3248,8 @@ const ISLAND_LAYOUT = {
   3: { gx0: -490, gy0: -299, cols: 190, rows: 152 },
   4: { gx0: -49, gy0: -455, cols: 196, rows: 152 },
   5: { gx0: 367, gy0: -106, cols: 209, rows: 176 },
-  6: { gx0: -125, gy0: -108, cols: 220, rows: 190 }
-  // isola della redazione ("editors issue"), al centro
+  6: { gx0: -85, gy0: -148, cols: 220, rows: 190 }
+  // isola della redazione ("editors issue"), al centro};
 };
 
 const sample$1 = [
