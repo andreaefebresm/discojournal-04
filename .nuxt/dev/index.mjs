@@ -3243,13 +3243,13 @@ const about_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.definePropert
 }, Symbol.toStringTag, { value: 'Module' }));
 
 const ISLAND_LAYOUT = {
-  1: { gx0: 42, gy0: 219, cols: 209, rows: 176 },
-  2: { gx0: -466, gy0: 142, cols: 214, rows: 157 },
-  3: { gx0: -490, gy0: -299, cols: 190, rows: 152 },
-  4: { gx0: -49, gy0: -455, cols: 196, rows: 152 },
-  5: { gx0: 367, gy0: -106, cols: 209, rows: 176 },
-  6: { gx0: -85, gy0: -148, cols: 220, rows: 190 }
-  // isola della redazione ("editors issue"), al centro};
+  1: { gx0: 132, gy0: 182, cols: 209, rows: 176 },
+  2: { gx0: -370, gy0: 83, cols: 214, rows: 157 },
+  3: { gx0: -458, gy0: -323, cols: 190, rows: 152 },
+  4: { gx0: -85, gy0: -506, cols: 196, rows: 152 },
+  5: { gx0: 337, gy0: -136, cols: 209, rows: 176 },
+  6: { gx0: -81, gy0: -181, cols: 220, rows: 190 }
+  // isola della redazione, al centro
 };
 
 const sample$1 = [

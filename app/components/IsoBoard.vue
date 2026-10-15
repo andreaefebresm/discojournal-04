@@ -581,7 +581,8 @@ function buildBoard() {
   const ar = wrapRect.width && wrapRect.height ? wrapRect.width / wrapRect.height : contentW / contentH;
   let vbW = contentW, vbH = contentH;
   if (contentW / contentH > ar) { vbH = contentW / ar; } else { vbW = contentH * ar; }
-  const vbX = cx - vbW / 2, vbY = cy - vbH / 2;
+  const DESKTOP_DROP = wrapRect.width > 760 ? 0.05 : 0;
+  const vbX = cx - vbW / 2, vbY = cy - vbH / 2 - vbH * DESKTOP_DROP;
   svg.setAttribute('viewBox', `${vbX.toFixed(1)} ${vbY.toFixed(1)} ${vbW.toFixed(1)} ${vbH.toFixed(1)}`);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
 
@@ -589,6 +590,7 @@ function buildBoard() {
   const CAP_FONT = 14 / pxPerUnit;
   const CAP_STROKE = 3 / pxPerUnit;
   const CAP_GAP = 16 / pxPerUnit;
+  const CAP_GLOW = 2.5 / pxPerUnit; // raggio dell'alone (in px reali)
 
   const isMobileView = wrapRect.width > 0 && wrapRect.width <= 760;
   const MOSAIC_CELL = isMobileView ? 176 : 96;
@@ -769,9 +771,23 @@ function buildBoard() {
     const wrap = el('g', { class: 'main-island' });
     wrap.appendChild(fo);
 
+        // didascalia, sotto l'isola: SOLO il titolo, sempre visibile (prima appariva solo in
+    // hover, e con "Isola 0N —" davanti).
     const cap = el('text', { x: bx0 + bw / 2, y: (by1 + CAP_GAP).toFixed(1), 'text-anchor': 'middle', class: 'house-cap' });
-    cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px; stroke-width:${CAP_STROKE.toFixed(2)}px`);
+    cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px`);
     cap.textContent = hs.title;
+
+    // alone morbido crema dietro le lettere (al posto del contorno bianco netto)
+    const fid = `capGlow${hs.number}`;
+    const glowF = el('filter', { id: fid, x: '-15%', y: '-90%', width: '130%', height: '280%' });
+    glowF.appendChild(el('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: CAP_GLOW.toFixed(1), result: 'b' }));
+    glowF.appendChild(el('feFlood', { 'flood-color': '#f4f2ec', 'flood-opacity': '0.95' }));
+    glowF.appendChild(el('feComposite', { in2: 'b', operator: 'in', result: 'glow' }));
+    const glowMerge = el('feMerge', {});
+    ['glow', 'glow', 'SourceGraphic'].forEach(r => glowMerge.appendChild(el('feMergeNode', { in: r })));
+    glowF.appendChild(glowMerge);
+    wrap.appendChild(glowF);
+    cap.setAttribute('filter', `url(#${fid})`);
     wrap.appendChild(cap);
 
     svg.appendChild(wrap);
@@ -933,14 +949,12 @@ watch(() => props.houses, buildBoard, { deep: true });
   fill: #efe9d8;
 }
 
-.house-cap {
+.house-cap{
   font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-weight: 600;
-  fill: var(--ink, #232019);
-  paint-order: stroke;
-  stroke: #f4f2ec;
-  stroke-linejoin: round;
-  pointer-events: none;
+  font-weight:800;
+  fill:var(--ink, #232019);
+  stroke:none;
+  pointer-events:none;
   transition: opacity .35s ease;
 }
 
@@ -958,6 +972,8 @@ watch(() => props.houses, buildBoard, { deep: true });
 }
 
 @media (max-width: 760px) {
+
+  
   .board-wrap {
     display: flex;
     position: fixed;
@@ -1010,13 +1026,18 @@ watch(() => props.houses, buildBoard, { deep: true });
     filter: drop-shadow(0 8px 10px rgba(15, 13, 10, .3));
   }
 
-  .list .caption {
+   .list .caption{
     font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
-    font-size: 12px;
-    color: #6b6558;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink, #232019);
     text-align: center;
-    padding-top: 6px;
-    text-shadow: 0 1px 3px rgba(255, 255, 255, .9), 0 1px 3px rgba(255, 255, 255, .9);
+    padding-top: 8px;
+    /* alone morbido crema (stesso trattamento dei titoli del desktop), non un contorno netto */
+    text-shadow:
+      0 0 3px rgba(244,242,236,.95),
+      0 0 6px rgba(244,242,236,.9),
+      0 0 12px rgba(244,242,236,.75);
   }
 }
 </style>
