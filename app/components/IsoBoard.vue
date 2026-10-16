@@ -606,7 +606,7 @@ function buildBoard() {
     }
     return out;
   }
-  const GROUT_A = 0.32;
+  const GROUT_A = 0.2;
   const mosaicDeepSVG = `
     <pattern id="mosaicDeep" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
       ${mosaicTilesSVG(MOSAIC_SUB, '#3d5a8f', '#32507f', [[0, 2], [3, 1]], `rgba(238,244,252,${GROUT_A})`, 2.6)}
@@ -718,7 +718,7 @@ function buildBoard() {
       if (!pts) return;
       const ptsStr = pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
       islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: `url(#${step.pattern})` }));
-      islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: 'none', stroke: 'rgba(255,255,255,0.3)', 'stroke-width': 2.2 }));
+      islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: 'none', stroke: 'rgba(255,255,255,0.15)', 'stroke-width': 2.2 }));
     });
   });
   seaG.setAttribute('opacity', '0.8');
