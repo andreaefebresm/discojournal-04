@@ -590,7 +590,6 @@ function buildBoard() {
   const CAP_FONT = 14 / pxPerUnit;
   const CAP_STROKE = 3 / pxPerUnit;
   const CAP_GAP = 16 / pxPerUnit;
-  const CAP_GLOW = 2.5 / pxPerUnit; // raggio dell'alone (in px reali)
 
   const isMobileView = wrapRect.width > 0 && wrapRect.width <= 760;
   const MOSAIC_CELL = isMobileView ? 176 : 96;
@@ -607,17 +606,18 @@ function buildBoard() {
     }
     return out;
   }
+  const GROUT_A = 0.32;
   const mosaicDeepSVG = `
     <pattern id="mosaicDeep" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
-      ${mosaicTilesSVG(MOSAIC_SUB, '#3d5a8f', '#32507f', [[0, 2], [3, 1]], '#eef4fc', 2.6)}
+      ${mosaicTilesSVG(MOSAIC_SUB, '#3d5a8f', '#32507f', [[0, 2], [3, 1]], `rgba(238,244,252,${GROUT_A})`, 2.6)}
     </pattern>`;
   const mosaicMidSVG = `
     <pattern id="mosaicMid" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
-      ${mosaicTilesSVG(MOSAIC_SUB, '#5c7ab8', '#4a6aa8', [[2, 1], [0, 3]], '#f2f6fd', 2.6)}
+      ${mosaicTilesSVG(MOSAIC_SUB, '#5c7ab8', '#4a6aa8', [[2, 1], [0, 3]], `rgba(242,246,253,${GROUT_A})`, 2.6)}
     </pattern>`;
   const mosaicShallowSVG = `
     <pattern id="mosaicShallow" patternUnits="userSpaceOnUse" width="${MOSAIC_CELL}" height="${MOSAIC_CELL}" patternTransform="${projMatrix}">
-      ${mosaicTilesSVG(MOSAIC_SUB, '#8aa3d6', '#7590c6', [[1, 0], [2, 3]], '#f7faff', 2.6)}
+      ${mosaicTilesSVG(MOSAIC_SUB, '#8aa3d6', '#7590c6', [[1, 0], [2, 3]], `rgba(247,250,255,${GROUT_A})`, 2.6)}
     </pattern>`;
   // "seaWobble": due passaggi in catena. Il primo (statico, seed fisso) è il wobble
   // "dipinto a mano" — le linee non sono perfettamente rette come il resto della board (case/
@@ -718,7 +718,7 @@ function buildBoard() {
       if (!pts) return;
       const ptsStr = pts.map(p => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
       islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: `url(#${step.pattern})` }));
-      islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: 'none', stroke: 'rgba(255,255,255,0.55)', 'stroke-width': 2.2 }));
+      islandStepsG.appendChild(el('polygon', { points: ptsStr, fill: 'none', stroke: 'rgba(255,255,255,0.3)', 'stroke-width': 2.2 }));
     });
   });
   seaG.setAttribute('opacity', '0.8');
@@ -771,23 +771,9 @@ function buildBoard() {
     const wrap = el('g', { class: 'main-island' });
     wrap.appendChild(fo);
 
-        // didascalia, sotto l'isola: SOLO il titolo, sempre visibile (prima appariva solo in
-    // hover, e con "Isola 0N —" davanti).
     const cap = el('text', { x: bx0 + bw / 2, y: (by1 + CAP_GAP).toFixed(1), 'text-anchor': 'middle', class: 'house-cap' });
-    cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px`);
+    cap.setAttribute('style', `font-size:${CAP_FONT.toFixed(1)}px; stroke-width:${CAP_STROKE.toFixed(2)}px`);
     cap.textContent = hs.title;
-
-    // alone morbido crema dietro le lettere (al posto del contorno bianco netto)
-    const fid = `capGlow${hs.number}`;
-    const glowF = el('filter', { id: fid, x: '-15%', y: '-90%', width: '130%', height: '280%' });
-    glowF.appendChild(el('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: CAP_GLOW.toFixed(1), result: 'b' }));
-    glowF.appendChild(el('feFlood', { 'flood-color': '#f4f2ec', 'flood-opacity': '0.95' }));
-    glowF.appendChild(el('feComposite', { in2: 'b', operator: 'in', result: 'glow' }));
-    const glowMerge = el('feMerge', {});
-    ['glow', 'glow', 'SourceGraphic'].forEach(r => glowMerge.appendChild(el('feMergeNode', { in: r })));
-    glowF.appendChild(glowMerge);
-    wrap.appendChild(glowF);
-    cap.setAttribute('filter', `url(#${fid})`);
     wrap.appendChild(cap);
 
     svg.appendChild(wrap);
@@ -951,9 +937,11 @@ watch(() => props.houses, buildBoard, { deep: true });
 
 .house-cap{
   font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
-  font-weight:800;
+  font-weight:600;
   fill:var(--ink, #232019);
-  stroke:none;
+  paint-order:stroke;
+  stroke:#f4f2ec;
+  stroke-linejoin:round;
   pointer-events:none;
   transition: opacity .35s ease;
 }
@@ -1026,18 +1014,6 @@ watch(() => props.houses, buildBoard, { deep: true });
     filter: drop-shadow(0 8px 10px rgba(15, 13, 10, .3));
   }
 
-   .list .caption{
-    font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--ink, #232019);
-    text-align: center;
-    padding-top: 8px;
-    /* alone morbido crema (stesso trattamento dei titoli del desktop), non un contorno netto */
-    text-shadow:
-      0 0 3px rgba(244,242,236,.95),
-      0 0 6px rgba(244,242,236,.9),
-      0 0 12px rgba(244,242,236,.75);
-  }
+  .list .caption{ font-family: "Valley Sans", -apple-system, "Helvetica Neue", Arial, sans-serif; font-size:12px; color:#6b6558; text-align:center; padding-top:6px; text-shadow: 0 1px 3px rgba(255,255,255,.9), 0 1px 3px rgba(255,255,255,.9); }
 }
 </style>
