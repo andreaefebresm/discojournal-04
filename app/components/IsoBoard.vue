@@ -744,7 +744,15 @@ function buildBoard() {
     const by0 = Math.min(...corners.map(p => p.y)), by1 = Math.max(...corners.map(p => p.y));
     const bw = bx1 - bx0, bh = by1 - by0;
 
-    const w = bw * 0.92;
+      // tutte le isole alla stessa larghezza (media degli ingombri): niente più differenze di
+    // dimensione tra un'isola e l'altra
+    const EQUAL_ISLAND_SIZE = true;
+    const avgBw = props.houses.reduce((sum: number, h: any) => {
+      const xs = plotCorners(h).map((p: { x: number }) => p.x);
+      return sum + (Math.max(...xs) - Math.min(...xs));
+    }, 0) / props.houses.length;
+    const w = (EQUAL_ISLAND_SIZE ? avgBw : bw) * 0.92;
+    
     const h = w * ISLAND_HW;
     const x = bx0 + (bw - w) / 2;
     const y = by0 + (bh - h) / 2;

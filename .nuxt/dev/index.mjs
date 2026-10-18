@@ -2182,7 +2182,22 @@ dev_server_logs_default,
 _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw
 ];
 
-const assets = {};
+const assets = {
+  "/index.mjs": {
+    "type": "text/javascript; charset=utf-8",
+    "etag": "\"1f780-7sufeJd2V9M2Ncuwe3/wmLxFj1I\"",
+    "mtime": "2026-10-18T17:01:59.342Z",
+    "size": 128896,
+    "path": "index.mjs"
+  },
+  "/index.mjs.map": {
+    "type": "application/json",
+    "etag": "\"77746-TZ5IxjIoIiPOfmy896Xmu39xX58\"",
+    "mtime": "2026-10-18T17:01:59.341Z",
+    "size": 489286,
+    "path": "index.mjs.map"
+  }
+};
 
 function readAsset (id) {
   const serverDir = dirname$1(fileURLToPath(globalThis._importMeta_.url));
@@ -3243,12 +3258,12 @@ const about_get$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.definePropert
 }, Symbol.toStringTag, { value: 'Module' }));
 
 const ISLAND_LAYOUT = {
-  1: { gx0: 132, gy0: 182, cols: 209, rows: 176 },
-  2: { gx0: -370, gy0: 83, cols: 214, rows: 157 },
-  3: { gx0: -458, gy0: -323, cols: 190, rows: 152 },
-  4: { gx0: -85, gy0: -506, cols: 196, rows: 152 },
-  5: { gx0: 337, gy0: -136, cols: 209, rows: 176 },
-  6: { gx0: -81, gy0: -181, cols: 220, rows: 190 }
+  1: { gx0: 150, gy0: 188, cols: 206, rows: 168 },
+  2: { gx0: -431, gy0: 77, cols: 206, rows: 168 },
+  3: { gx0: -500, gy0: -325, cols: 206, rows: 168 },
+  4: { gx0: -100, gy0: -608, cols: 206, rows: 168 },
+  5: { gx0: 446, gy0: -128, cols: 206, rows: 168 },
+  6: { gx0: -100, gy0: -160, cols: 206, rows: 168 }
   // isola della redazione, al centro
 };
 
