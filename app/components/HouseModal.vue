@@ -377,4 +377,15 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
   letter-spacing: .02em;
   margin: 8px 0 10px;
 }
+
+.modal-body .rt-media{ margin: 24px 0; text-align: center; }
+.modal-body .rt-media img,
+.modal-body .rt-media video{
+  display: block;
+  margin: 0 auto;
+  width: auto;          /* dimensione reale: non viene ingrandita oltre l'originale */
+  max-width: 100%;      /* ma se è più larga della colonna si adatta (mai oltre) */
+  height: auto;         /* proporzioni sempre quelle originali */
+  border-radius: 4px;
+}
 </style>

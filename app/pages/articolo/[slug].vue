@@ -124,4 +124,14 @@ h1{ font-weight:normal; font-size:32px; margin: 6px 0 24px; }
   font-size: 40px; font-weight: 700; line-height: 1.1;
   letter-spacing: .02em; margin: 8px 0 10px;
 }
+.body :deep(.rt-media){ margin: 24px 0; text-align: center; }
+.body :deep(.rt-media img),
+.body :deep(.rt-media video){
+  display: block;
+  margin: 0 auto;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
 </style>
