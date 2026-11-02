@@ -1,0 +1,12 @@
+# Issue 3 (vecchio sito Grav): tutti gli articoli sotto /home/... vanno all'archivio
+[[redirects]]
+  from = "/home"
+  to = "https://discojournal.github.io/archive/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/home/*"
+  to = "https://discojournal.github.io/archive/"
+  status = 301
+  force = true
