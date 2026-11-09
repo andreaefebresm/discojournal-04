@@ -1,12 +1,12 @@
-# Issue 3 (vecchio sito Grav): tutti gli articoli sotto /home/... vanno all'archivio
+# Issue 3 (vecchio sito Grav): gli articoli sotto /home/... vanno all'archivio
 [[redirects]]
   from = "/home"
-  to = "https://discojournal.github.io/archive/"
+  to = "https://archive.discojournal.com/issue-3/"
   status = 301
   force = true
 
 [[redirects]]
   from = "/home/*"
-  to = "https://discojournal.github.io/archive/"
+  to = "https://archive.discojournal.com/issue-3/home/:splat"
   status = 301
   force = true
