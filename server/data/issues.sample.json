@@ -3,18 +3,18 @@
     "number": 3,
     "title": "Issue 3",
     "image": { "url": "/assets/issues/issue3.png", "width": 3102, "height": 1884 },
-    "url": null
+    "url": "https://archive.discojournal.com/issue-3/"
   },
   {
     "number": 2,
     "title": "Issue 2",
     "image": { "url": "/assets/issues/issue2.png", "width": 3102, "height": 1884 },
-    "url": "https://discojournal.github.io/archive/"
+    "url": "https://archive.discojournal.com/issue-2/"
   },
   {
     "number": 1,
     "title": "Issue 1",
     "image": { "url": "/assets/issues/issue1.png", "width": 3102, "height": 1884 },
-    "url": "https://discojournal.github.io/archive/index.html?p=228.html"
+    "url": "https://archive.discojournal.com/issue-1/"
   }
 ]
